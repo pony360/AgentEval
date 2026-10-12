@@ -6,7 +6,7 @@
 - it **evaluates** AI agents with standard exam papers, and
 - it **issues signed certificates** when a system passes both.
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[English](https://github.com/pony360/AgentEval/blob/main/README.md) · [简体中文](https://github.com/pony360/AgentEval/blob/main/README.zh-CN.md)
 
 > **Status: alpha (0.1.0).** The rule packs are starter mappings, and every one is marked `verified: false`.
 > They are a starting point for your own legal and compliance review. They are not legal advice.
@@ -59,16 +59,26 @@ combined result into a certificate that anyone can verify offline.
 Requires Python 3.11+.
 
 ```bash
-git clone https://github.com/pony360/AgentEval.git
-cd agenteval
-pip install -e ".[kubernetes]"      # drop [kubernetes] if you only scan snapshots
+pip install "agenteval-toolkit[kubernetes]"   # drop [kubernetes] if you only scan snapshots
 agenteval version
+
+mkdir my-ai-governance && cd my-ai-governance
+agenteval init          # copies the starter rules/, exams/, certification/ and examples/ here
 ```
 
+The PyPI package is named `agenteval-toolkit`. The command is `agenteval` and the import name is `agenteval`.
 Optional extras: `pdf` (certificate PDFs through Playwright/Chromium) and `dev` (pytest and build).
 
-The CLI looks for `rules/`, `exams/` and `certification/` in the current directory. Pass
-`--rules` or `--exams`, or set the [environment variables](#configuration), to use other locations.
+The CLI looks for `rules/`, `exams/` and `certification/` in the current directory, and falls back to the
+starter copies bundled with the package. Pass `--rules` or `--exams`, or set the
+[environment variables](#configuration), to use other locations.
+
+From source:
+
+```bash
+git clone https://github.com/pony360/AgentEval.git && cd AgentEval
+pip install -e ".[dev,kubernetes]"
+```
 
 ## Quickstart
 
@@ -110,6 +120,7 @@ Every command accepts `--lang zh` for Chinese output.
 
 | Command | Purpose |
 |---|---|
+| `agenteval init [DIR]` | Copy the starter rule packs, exams, policy and examples into a directory |
 | `agenteval scan` | Collect assets and evaluate rules. Writes JSON, SARIF or HTML |
 | `agenteval snapshot` | Export a read-only cluster snapshot |
 | `agenteval rules validate \| list` | Validate rule packs and list rules |
@@ -155,9 +166,9 @@ rules:
         verified: false
 ```
 
-The full reference is in **[docs/rule-schema.md](docs/rule-schema.md)**. It covers every field,
+The full reference is in **[docs/rule-schema.md](https://github.com/pony360/AgentEval/blob/main/docs/rule-schema.md)**. It covers every field,
 the condition operators, the fact catalog, attestations and translations. The schemas are in
-[`agenteval/schemas/`](agenteval/schemas/).
+[`agenteval/schemas/`](https://github.com/pony360/AgentEval/blob/main/agenteval/schemas/).
 
 ## Evaluating agents
 
@@ -170,7 +181,7 @@ agenteval eval run -p cs-ecommerce-v1 -a my-agent.yaml --judge anthropic --judge
   --judge-key-env ANTHROPIC_API_KEY -o report.html
 ```
 
-See **[docs/exams.md](docs/exams.md)** for the paper format, scoring, adapters and judges.
+See **[docs/exams.md](https://github.com/pony360/AgentEval/blob/main/docs/exams.md)** for the paper format, scoring, adapters and judges.
 
 ## Certification
 
@@ -183,7 +194,7 @@ See **[docs/exams.md](docs/exams.md)** for the paper format, scoring, adapters a
 - the evidence is at most 30 days old.
 
 Evaluations scored by the offline heuristic judge get **DEMO** certificates only. Certificates are
-valid for 6 months. See **[docs/certification.md](docs/certification.md)** for the gates, keys,
+valid for 6 months. See **[docs/certification.md](https://github.com/pony360/AgentEval/blob/main/docs/certification.md)** for the gates, keys,
 the verification URL and status hooks, and how to revoke certificates.
 
 ## Configuration
@@ -209,7 +220,7 @@ the verification URL and status hooks, and how to revoke certificates.
 - **Secrets come from the environment.** Agent and judge API keys are read from the variables you name.
 - **Private key.** The signing key is created with mode 0600 and is git-ignored.
 
-To report a vulnerability, see [SECURITY.md](SECURITY.md).
+To report a vulnerability, see [SECURITY.md](https://github.com/pony360/AgentEval/blob/main/SECURITY.md).
 
 ## Project layout
 
@@ -228,15 +239,14 @@ tests/                Test suite (pytest)
 - More collectors (cloud-managed endpoints, model registries, API gateways)
 - More rule packs (EU AI Act, ISO/IEC 42001, HIPAA), contributed with reviewer sign-off
 - More exam papers (IT helpdesk, sales assistant, RAG question answering)
-- Bundled starter content in the wheel, and a `pip install agenteval` release on PyPI
 - A hosted verification and status service reference implementation
 
 ## Contributing
 
 Contributions are welcome, especially rules, exam papers and translations. Read
-[CONTRIBUTING.md](CONTRIBUTING.md) first. Commits must be signed off under the
+[CONTRIBUTING.md](https://github.com/pony360/AgentEval/blob/main/CONTRIBUTING.md) first. Commits must be signed off under the
 [DCO](https://developercertificate.org/) (`git commit -s`). This project follows the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+[Code of Conduct](https://github.com/pony360/AgentEval/blob/main/CODE_OF_CONDUCT.md).
 
 ```bash
 pip install -e ".[dev]"
@@ -245,7 +255,7 @@ pytest
 
 ## License
 
-Licensed under the [Apache License, Version 2.0](LICENSE). See [NOTICE](NOTICE).
+Licensed under the [Apache License, Version 2.0](https://github.com/pony360/AgentEval/blob/main/LICENSE). See [NOTICE](https://github.com/pony360/AgentEval/blob/main/NOTICE).
 
 Framework and regulation names, including NIST, PCI DSS and California statutes, are used
 only to identify the source material a rule refers to. Their use does not imply endorsement by,

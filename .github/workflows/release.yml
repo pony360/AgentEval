@@ -1,0 +1,51 @@
+name: Release
+
+# Publishes to PyPI with Trusted Publishing (OIDC): no API token is stored in GitHub.
+# One-time setup on PyPI: add a (pending) trusted publisher for project "agenteval-toolkit",
+# owner "pony360", repository "AgentEval", workflow "release.yml", environment "pypi".
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Check tag matches package version
+        run: |
+          v=$(python -c "import re,pathlib;print(re.search(r'__version__ = \"(.+?)\"', pathlib.Path('agenteval/__init__.py').read_text()).group(1))")
+          test "v$v" = "${GITHUB_REF_NAME}" || { echo "Tag ${GITHUB_REF_NAME} != v$v"; exit 1; }
+      - run: pip install build twine
+      - run: python -m build
+      - run: twine check --strict dist/*
+      - name: Smoke-test the wheel
+        run: |
+          python -m venv /tmp/v && /tmp/v/bin/pip install dist/*.whl
+          cd "$(mktemp -d)" && /tmp/v/bin/agenteval rules validate && /tmp/v/bin/agenteval eval validate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/agenteval-toolkit/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1

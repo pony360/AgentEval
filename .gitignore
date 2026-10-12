@@ -10,5 +10,7 @@ dist/
 .agenteval/
 certificates/
 reports/out/
+agenteval/_starter/
+.schemas/
 *.pem
 !examples/**/*.pem

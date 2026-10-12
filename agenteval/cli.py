@@ -97,6 +97,10 @@ CLI_MESSAGES = {
     "need_pubkey": {"en": "No public key given and no local signing key at {path}; pass --public-key",
                     "zh": "未指定 --public-key，且本地不存在签名密钥 {path}"},
     "schemas_written": {"en": "Wrote {n} JSON Schemas to {dir}", "zh": "已导出 {n} 个 JSON Schema 到 {dir}"},
+    "init_done": {"en": "Starter content in {dir}: {copied} files copied, {skipped} existing files kept",
+                  "zh": "入门内容已写入 {dir}：复制 {copied} 个文件，保留已有文件 {skipped} 个"},
+    "init_missing": {"en": "Bundled starter content not found in this installation",
+                     "zh": "当前安装中找不到内置的入门内容"},
 }
 
 
@@ -215,6 +219,46 @@ def rules_list(rules: Path = typer.Option(None, help="Rules directory or file.")
     for r in _load_rules_or_exit(rules or default_rules_dir()):
         title = (r.translations.get(lang.value) or {}).get("title") or r.title
         typer.echo(f"{r.id:<14} {r.pack:<10} {r.severity.value:<9} {r.type.value:<12} {title}")
+
+
+@app.command("init")
+def init_cmd(directory: Path = typer.Argument(Path("."), help="Where to create rules/, exams/, certification/ and examples/."),
+             lang: Lang = LANG_OPT) -> None:
+    """Copy the starter rule packs, exam papers, certification policy and examples into a directory to customize."""
+    import shutil
+    from importlib import resources
+
+    from agenteval.config import STARTER_DIRS, starter_root
+
+    src = starter_root()
+    if not all((src / d).is_dir() for d in STARTER_DIRS):
+        typer.echo(_m("init_missing", lang.value), err=True)
+        raise typer.Exit(2)
+    copied = skipped = 0
+    for d in STARTER_DIRS:
+        for f in sorted((src / d).rglob("*")):
+            if not f.is_file() or "__pycache__" in f.parts:
+                continue
+            dest = directory / f.relative_to(src)
+            if dest.exists():
+                skipped += 1
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            text = f.read_text(encoding="utf-8") if f.suffix in (".yaml", ".yml") else None
+            if text and text.startswith("# yaml-language-server: $schema="):
+                # Re-point the editor modeline at the schemas exported to <dir>/.schemas/.
+                first, _, rest = text.partition("\n")
+                rel = os.path.relpath(directory / ".schemas" / Path(first.split("=", 1)[1]).name, dest.parent)
+                dest.write_text(f"# yaml-language-server: $schema={Path(rel).as_posix()}\n{rest}", encoding="utf-8")
+            else:
+                shutil.copy2(f, dest)
+            copied += 1
+    schemas_dir = directory / ".schemas"
+    schemas_dir.mkdir(parents=True, exist_ok=True)
+    for f in resources.files("agenteval").joinpath("schemas").iterdir():
+        if f.name.endswith(".schema.json"):
+            (schemas_dir / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+    typer.echo(_m("init_done", lang.value, dir=directory, copied=copied, skipped=skipped))
 
 
 @app.command("schemas")

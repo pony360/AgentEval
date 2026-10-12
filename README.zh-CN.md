@@ -2,7 +2,7 @@
 
 **扫描 · 评测 · 认证。** AgentEval 是一个 Apache-2.0 开源命令行工具：按策略即代码（policy-as-code）规则包**扫描**自托管 AI 基础设施，用标准试卷**评测** AI Agent，两项都通过时**签发数字签名证书**。
 
-[English](README.md) · [简体中文](README.zh-CN.md)
+[English](https://github.com/pony360/AgentEval/blob/main/README.md) · [简体中文](https://github.com/pony360/AgentEval/blob/main/README.zh-CN.md)
 
 > **状态：Alpha（0.1.0）。** 内置规则包为入门级映射，全部标记为 `verified: false`，供贵司法务/合规团队审核的起点，不构成法律意见。
 
@@ -38,13 +38,15 @@
 需要 Python 3.11+。
 
 ```bash
-git clone https://github.com/pony360/AgentEval.git
-cd agenteval
-pip install -e ".[kubernetes]"
+pip install "agenteval-toolkit[kubernetes]"
 agenteval version
+mkdir my-ai-governance && cd my-ai-governance
+agenteval init          # 把入门规则包、试卷、认证策略和示例复制到当前目录
 ```
 
-CLI 默认读取当前目录下的 `rules/`、`exams/`、`certification/`；可通过 `--rules`、`--exams` 或[环境变量](#配置)指定。
+PyPI 包名为 `agenteval-toolkit`，命令和 Python 导入名均为 `agenteval`。CLI 默认读取当前目录下的 `rules/`、`exams/`、`certification/`，找不到时使用安装包内置的入门内容；可通过 `--rules`、`--exams` 或[环境变量](#配置)指定。
+
+从源码安装：`git clone https://github.com/pony360/AgentEval.git && cd AgentEval && pip install -e ".[dev,kubernetes]"`
 
 ## 快速开始
 
@@ -87,12 +89,12 @@ agenteval cert verify certificates/AEV-*.json --public-key issuer.pem --lang zh
 
 ## 编写规则
 
-字段说明、条件操作符、事实目录、人工证明与翻译见 **[docs/rule-schema.md](docs/rule-schema.md)**（英文）。所有 YAML 文件首行带有 `yaml-language-server` 注释，VS Code 等编辑器可直接获得补全与校验；`agenteval schemas -o DIR` 可导出 Schema。
+字段说明、条件操作符、事实目录、人工证明与翻译见 **[docs/rule-schema.md](https://github.com/pony360/AgentEval/blob/main/docs/rule-schema.md)**（英文）。所有 YAML 文件首行带有 `yaml-language-server` 注释，VS Code 等编辑器可直接获得补全与校验；`agenteval schemas -o DIR` 可导出 Schema。
 
 ## 评测与认证
 
-- 试卷格式、评分与适配器：[docs/exams.md](docs/exams.md)
-- 认证门槛、密钥、验证与吊销：[docs/certification.md](docs/certification.md)
+- 试卷格式、评分与适配器：[docs/exams.md](https://github.com/pony360/AgentEval/blob/main/docs/exams.md)
+- 认证门槛、密钥、验证与吊销：[docs/certification.md](https://github.com/pony360/AgentEval/blob/main/docs/certification.md)
 
 颁证条件：安全得分 **> 90** 且质量得分 **> 90**；无未修复的高危/严重项；无待证明项；评测无关键项失败与会话错误；证据不超过 30 天。离线启发式裁判只能获得 **DEMO** 证书。证书有效期 6 个月。
 
@@ -109,12 +111,12 @@ agenteval cert verify certificates/AEV-*.json --public-key issuer.pem --lang zh
 
 ## 安全模型
 
-只读扫描；只记录敏感环境变量的**名称**而非值；规则条件为固定 DSL，YAML 使用 `safe_load`；缺失事实不会判定为通过；API Key 只从环境变量读取；签名私钥以 0600 权限创建且已加入 `.gitignore`。漏洞报告请见 [SECURITY.md](SECURITY.md)。
+只读扫描；只记录敏感环境变量的**名称**而非值；规则条件为固定 DSL，YAML 使用 `safe_load`；缺失事实不会判定为通过；API Key 只从环境变量读取；签名私钥以 0600 权限创建且已加入 `.gitignore`。漏洞报告请见 [SECURITY.md](https://github.com/pony360/AgentEval/blob/main/SECURITY.md)。
 
 ## 参与贡献
 
-欢迎贡献规则、试卷与翻译。请先阅读 [CONTRIBUTING.md](CONTRIBUTING.md)；提交需按 [DCO](https://developercertificate.org/) 签名（`git commit -s`）。
+欢迎贡献规则、试卷与翻译。请先阅读 [CONTRIBUTING.md](https://github.com/pony360/AgentEval/blob/main/CONTRIBUTING.md)；提交需按 [DCO](https://developercertificate.org/) 签名（`git commit -s`）。
 
 ## 许可证
 
-采用 [Apache License 2.0](LICENSE) 授权，另见 [NOTICE](NOTICE)。NIST、PCI DSS、加州法规等名称仅用于标识规则所引用的来源，不代表其所有者的认可或关联。
+采用 [Apache License 2.0](https://github.com/pony360/AgentEval/blob/main/LICENSE) 授权，另见 [NOTICE](https://github.com/pony360/AgentEval/blob/main/NOTICE)。NIST、PCI DSS、加州法规等名称仅用于标识规则所引用的来源，不代表其所有者的认可或关联。

@@ -1,0 +1,8 @@
+include LICENSE NOTICE README.md README.zh-CN.md CHANGELOG.md setup.py
+graft rules
+graft exams
+graft certification
+graft examples
+graft docs
+graft tests
+global-exclude __pycache__ *.py[cod]

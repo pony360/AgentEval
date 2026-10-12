@@ -5,14 +5,13 @@
 from __future__ import annotations
 
 import json
-import os
 from importlib import resources
 from pathlib import Path
 
 import yaml
 from jsonschema import Draft202012Validator
 
-from agenteval.config import REPO_ROOT
+from agenteval.config import content_dir
 
 from .models import ExamPaper
 
@@ -24,11 +23,7 @@ class PaperError(Exception):
 
 
 def default_exams_dir() -> Path:
-    env = os.environ.get("AGENTEVAL_EXAMS_DIR")
-    if env:
-        return Path(env)
-    cwd = Path.cwd() / "exams"
-    return cwd if cwd.exists() else REPO_ROOT / "exams"
+    return content_dir("exams", "AGENTEVAL_EXAMS_DIR")
 
 
 def _validator() -> Draft202012Validator:

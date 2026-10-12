@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import os
 import secrets
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,7 +13,7 @@ import yaml
 
 from agenteval.schema import check
 
-from agenteval.config import REPO_ROOT
+from agenteval.config import content_dir
 
 from .models import AISystem, CertPolicy, Decision
 from .signing import sign
@@ -51,11 +50,7 @@ def gate_text(code: str, params: dict[str, Any], lang: str = "zh") -> str:
 # ---------------- Registry ----------------
 
 def certification_dir() -> Path:
-    env = os.environ.get("AGENTEVAL_CERT_DIR")
-    if env:
-        return Path(env)
-    cwd = Path.cwd() / "certification"
-    return cwd if cwd.exists() else REPO_ROOT / "certification"
+    return content_dir("certification", "AGENTEVAL_CERT_DIR")
 
 
 def load_policy(directory: Path | None = None) -> CertPolicy:

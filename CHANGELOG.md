@@ -18,3 +18,5 @@ All notable changes to this project are documented here. The format follows
 - `agenteval cert`: strict certification gates, Ed25519-signed certificates, HTML/PDF rendering,
   optional verification-URL QR code and status-URL revocation check.
 - JSON Schemas for rules, packs, translations, attestations, exams, systems and policy; `agenteval schemas`.
+- `agenteval init`: copy the bundled starter content into a working directory.
+- Published on PyPI as `agenteval-toolkit` (command and import name `agenteval`), released via Trusted Publishing.

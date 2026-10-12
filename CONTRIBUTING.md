@@ -11,7 +11,7 @@ Thanks for helping! Rules, exam papers, collectors, translations and bug fixes a
 ## Development
 
 ```bash
-git clone https://github.com/pony360/AgentEval.git && cd agenteval
+git clone https://github.com/pony360/AgentEval.git && cd AgentEval
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
