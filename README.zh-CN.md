@@ -38,7 +38,7 @@
 需要 Python 3.11+。
 
 ```bash
-git clone https://github.com/Kecheng8/agenteval.git
+git clone https://github.com/pony360/AgentEval.git
 cd agenteval
 pip install -e ".[kubernetes]"
 agenteval version

@@ -43,10 +43,10 @@ pdf = ["playwright>=1.44"]
 dev = ["pytest>=8.0", "build>=1.2"]
 
 [project.urls]
-Homepage = "https://github.com/Kecheng8/agenteval"
-Source = "https://github.com/Kecheng8/agenteval"
-Issues = "https://github.com/Kecheng8/agenteval/issues"
-Changelog = "https://github.com/Kecheng8/agenteval/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/pony360/AgentEval"
+Source = "https://github.com/pony360/AgentEval"
+Issues = "https://github.com/pony360/AgentEval/issues"
+Changelog = "https://github.com/pony360/AgentEval/blob/main/CHANGELOG.md"
 
 [project.scripts]
 agenteval = "agenteval.cli:app"

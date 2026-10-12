@@ -59,7 +59,7 @@ combined result into a certificate that anyone can verify offline.
 Requires Python 3.11+.
 
 ```bash
-git clone https://github.com/Kecheng8/agenteval.git
+git clone https://github.com/pony360/AgentEval.git
 cd agenteval
 pip install -e ".[kubernetes]"      # drop [kubernetes] if you only scan snapshots
 agenteval version
