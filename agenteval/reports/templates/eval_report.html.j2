@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="{{ t.html_lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t.title }} · {{ r.agent_name }}</title>
+<style>
+  :root {
+    color-scheme: light;
+    --surface: #fcfcfb; --surface-2: #f1f1ef; --line: #e2e1dd;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #77756f;
+    --series-1: #2a78d6; --track: #e4ecf7;
+    --good: #1f7a3f; --good-bg: #e7f4ec; --critical: #b42318; --critical-bg: #fcebea; --warning: #8a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) {
+      color-scheme: dark;
+      --surface: #1a1a19; --surface-2: #232321; --line: #34332f;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #9a988f;
+      --series-1: #3987e5; --track: #22324a;
+      --good: #6fd39b; --good-bg: #183324; --critical: #ff8a80; --critical-bg: #3a1d1b; --warning: #f0c060;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface: #1a1a19; --surface-2: #232321; --line: #34332f;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #9a988f;
+    --series-1: #3987e5; --track: #22324a;
+    --good: #6fd39b; --good-bg: #183324; --critical: #ff8a80; --critical-bg: #3a1d1b; --warning: #f0c060;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--surface); color: var(--text-primary);
+         font: 14px/1.55 system-ui, -apple-system, "Segoe UI", "PingFang SC", sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 56px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 16px; margin: 32px 0 12px; }
+  .meta { color: var(--text-secondary); font-size: 13px; }
+  .meta span + span::before { content: " · "; color: var(--text-muted); }
+  .hero { display: grid; grid-template-columns: minmax(200px, 260px) 1fr; gap: 16px; margin-top: 20px; }
+  @media (max-width: 640px) { .hero { grid-template-columns: 1fr; } }
+  .card { background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .score { font-size: 56px; font-weight: 650; line-height: 1; }
+  .score small { font-size: 18px; color: var(--text-secondary); font-weight: 500; }
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px; border-radius: 999px;
+           font-weight: 600; font-size: 13px; border: 1px solid var(--line); color: var(--text-primary); }
+  .badge.good { background: var(--good-bg); color: var(--good); border-color: transparent; }
+  .badge.bad { background: var(--critical-bg); color: var(--critical); border-color: transparent; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .kpi b { display: block; font-size: 22px; }
+  .kpi { color: var(--text-secondary); font-size: 13px; }
+  .kpi b { color: var(--text-primary); }
+  .bars { display: grid; gap: 10px; }
+  .bar-row { display: grid; grid-template-columns: minmax(120px, 200px) 1fr 52px; align-items: center; gap: 12px; }
+  .bar-label { font-size: 13px; }
+  .bar-label small { display: block; color: var(--text-muted); font-size: 12px; }
+  .track { height: 14px; background: var(--track); border-radius: 0 4px 4px 0; position: relative; }
+  .fill { height: 14px; background: var(--series-1); border-radius: 0 4px 4px 0; }
+  .pass-mark { position: absolute; top: -4px; bottom: -4px; width: 1px; background: var(--text-muted); }
+  .bar-val { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; }
+  .note { border-left: 3px solid var(--warning); padding: 8px 12px; background: var(--surface-2); font-size: 13px;
+          color: var(--text-secondary); margin-top: 16px; }
+  .wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; color: var(--text-secondary); font-weight: 600; }
+  td.num { font-variant-numeric: tabular-nums; }
+  .ok { color: var(--good); font-weight: 600; white-space: nowrap; }
+  .ko { color: var(--critical); font-weight: 600; white-space: nowrap; }
+  .ko-msg { color: var(--critical); font-size: 12px; margin-top: 2px; }
+  details { margin-top: 6px; }
+  details summary { cursor: pointer; color: var(--text-secondary); }
+  .msg { margin: 6px 0; padding: 8px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--line);
+         white-space: pre-wrap; word-break: break-word; }
+  .msg .who { font-size: 12px; color: var(--text-muted); display: block; }
+  .tool { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--text-secondary); }
+  .small { font-size: 12px; color: var(--text-secondary); }
+  table.cases { table-layout: fixed; min-width: 720px; }
+  table.cases td { overflow-wrap: anywhere; }
+  tr.case-row td { border-bottom: none; padding-bottom: 2px; }
+  tr.case-detail td { padding-top: 0; }
+  table.inner { table-layout: fixed; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; margin: 6px 0; }
+  table.inner td { border-bottom: 1px solid var(--line); word-break: break-word; }
+  td.code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  footer { margin-top: 40px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ t.title }}</h1>
+  <div class="meta">
+    <span>{{ t.paper }}: {{ r.paper_title }} ({{ r.paper_id }}@{{ r.paper_version }})</span>
+    <span>{{ t.agent }}: {{ r.agent_name }}</span>
+    <span>{{ t.judge }}: {{ r.judge }}</span>
+    <span>{{ t.run }}: {{ r.run_id }}</span>
+    <span>{{ r.started_at.strftime('%Y-%m-%d %H:%M UTC') }}</span>
+  </div>
+
+  <div class="hero">
+    <div class="card">
+      <div class="small">{{ t.overall }}</div>
+      <div class="score">{{ '%.1f' % r.overall_score }}<small> / 100</small></div>
+      <div class="badges">
+        <span class="badge">{{ t.grade }} {{ r.grade }}</span>
+        {% if r.passed %}<span class="badge good">✓ {{ t.passed }}</span>
+        {% else %}<span class="badge bad">✕ {{ t.not_passed }}</span>{% endif %}
+      </div>
+      <div class="small" style="margin-top:8px">{{ t.passing }}: {{ r.passing_score }}</div>
+    </div>
+    <div class="card kpis">
+      <div class="kpi"><b>{{ r.stats.cases_passed }} / {{ r.stats.cases }}</b>{{ t.cases }}</div>
+      <div class="kpi"><b>{{ r.stats.pass_rate }}%</b>{{ t.case_pass_rate }}</div>
+      <div class="kpi"><b>{{ r.stats.critical_failures }}</b>{{ t.critical }}</div>
+      <div class="kpi"><b>{{ r.stats.latency_p50_ms | int if r.stats.latency_p50_ms is not none else '—' }} / {{ r.stats.latency_p95_ms | int if r.stats.latency_p95_ms is not none else '—' }} ms</b>{{ t.latency }}</div>
+    </div>
+  </div>
+
+  {% if r.judge == 'heuristic' %}<p class="note">{{ t.heuristic_note }}</p>{% endif %}
+
+  <h2>{{ t.dimensions }}</h2>
+  <div class="card bars" role="table" aria-label="{{ t.dimensions }}">
+    {% for d in r.dimensions %}
+    <div class="bar-row" role="row" title="{{ d.name }}: {{ d.score if d.score is not none else t.na }} ({{ t.weight }} {{ (d.weight * 100) | round | int }}%, {{ d.items }} {{ t.items_label }})">
+      <div class="bar-label" role="cell">{{ d.name }}<small>{{ t.weight }} {{ (d.weight * 100) | round | int }}% · {{ d.items }} {{ t.items_label }}</small></div>
+      <div class="track" role="cell">
+        {% if d.score is not none %}<div class="fill" style="width: {{ d.score }}%"></div>{% endif %}
+        <div class="pass-mark" style="left: {{ r.passing_score }}%" aria-hidden="true"></div>
+      </div>
+      <div class="bar-val" role="cell">{{ d.score if d.score is not none else '—' }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <h2>{{ t.case_results }}</h2>
+  <div class="wrap">
+  <table class="cases">
+    <colgroup><col style="width:76px"><col><col style="width:140px"><col style="width:84px"><col style="width:64px"><col style="width:96px"></colgroup>
+    <thead><tr><th>ID</th><th>{{ t.cases }}</th><th>{{ t.category }}</th><th>{{ t.difficulty }}</th><th>{{ t.score }}</th><th>{{ t.status }}</th></tr></thead>
+    <tbody>
+    {% for c in r.cases %}
+    <tr class="case-row">
+      <td><b>{{ c.id }}</b></td>
+      <td>{{ c.title }}
+        {% if c.error %}<div class="ko-msg">{{ t.error }}: {{ c.error }}</div>{% endif %}
+        {% if c.critical_failures %}<div class="ko-msg">✕ {{ t.critical }}: {{ c.critical_failures | join(', ') }}</div>{% endif %}
+      </td>
+      <td class="small">{{ c.category }}</td>
+      <td class="small">{{ c.difficulty }}</td>
+      <td class="num"><b>{{ c.score }}</b></td>
+      <td class="{{ 'ok' if c.passed else 'ko' }}">{{ ('✓ ' ~ t.case_pass) if c.passed else ('✕ ' ~ t.case_fail) }}</td>
+    </tr>
+    <tr class="case-detail"><td></td><td colspan="5">
+        <details><summary>{{ t.transcript }}</summary>
+          {% for m in c.transcript %}
+          <div class="msg"><span class="who">{{ t.user if m.role == 'user' else t.agent_role }}{% if m.latency_ms is not none %} · {{ m.latency_ms | int }} ms{% endif %}</span>{{ m.content }}{% if m.tool_calls %}
+<span class="tool">{{ t.tools }}: {% for tc in m.tool_calls %}{{ tc.name }}({{ tc.arguments | tojson }}){% if not loop.last %}, {% endif %}{% endfor %}</span>{% endif %}</div>
+          {% endfor %}
+        </details>
+        {% if c.assertions %}
+        <details><summary>{{ t.assertions }} ({{ c.assertions | selectattr('passed') | list | length }}/{{ c.assertions | length }})</summary>
+          <table class="inner">
+            {% for a in c.assertions %}
+            <tr><td class="{{ 'ok' if a.passed else 'ko' }}" style="width:28px">{{ '✓' if a.passed else '✕' }}</td>
+                <td class="small" style="width:170px">T{{ a.turn }} · {{ a.type }}{% if a.critical %} · critical{% endif %}<br>{{ a.dimension }}</td>
+                <td class="small code">{{ a.value | tojson }}</td>
+                <td class="small" style="width:30%">{{ a.detail }}</td></tr>
+            {% endfor %}
+          </table>
+        </details>
+        {% endif %}
+        {% if c.rubric %}
+        <details><summary>{{ t.rubric }}</summary>
+          <table class="inner">
+            {% for g in c.rubric %}
+            <tr><td class="num" style="width:48px"><b>{{ g.score if g.score is not none else '—' }}</b>/5</td>
+                <td class="small" style="width:140px">{{ g.dimension }}</td>
+                <td class="small">{{ g.criterion }}<br><i>{{ g.rationale }}</i></td></tr>
+            {% endfor %}
+          </table>
+        </details>
+        {% endif %}
+    </td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <footer>{{ t.disclaimer }}</footer>
+</main>
+</body>
+</html>

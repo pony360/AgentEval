@@ -1,0 +1,164 @@
+# yaml-language-server: $schema=../../agenteval/schemas/rule.schema.json
+# Baseline security controls for inference services (automated checks)
+# Note: verified=false in sources means the mapping has not yet been reviewed by legal/compliance.
+rules:
+  - id: FED-SEC-001
+    title: Inference endpoints must require authentication
+    description: >-
+      Model inference APIs must not allow anonymous access; protect them with an API key, OIDC, or gateway authentication.
+    severity: high
+    type: automated
+    category: access-control
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      field: auth.enabled
+      op: eq
+      value: true
+    remediation: >-
+      Configure authentication for the inference service: for vLLM use --api-key injected from a Secret; or front
+      it with oauth2-proxy / Envoy ext_authz / an API gateway, and add the annotation agenteval.io/auth=<method>.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: MEASURE 2.7 (AI system security and resilience evaluated)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+      - framework: NIST SP 800-53 Rev.5
+        reference: AC-3 Access Enforcement
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: FED-SEC-002
+    title: Externally exposed inference endpoints must use TLS
+    description: Inference services exposed via LoadBalancer, NodePort, or Ingress must encrypt traffic in 
+      transit.
+    severity: high
+    type: automated
+    category: data-protection
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        field: exposure.public
+        op: eq
+        value: true
+    check:
+      field: tls.enabled
+      op: eq
+      value: true
+    remediation: >-
+      Configure a tls section on the Ingress with a trusted certificate (e.g., cert-manager), or enable mTLS in
+      the service mesh.
+    sources:
+      - framework: NIST SP 800-53 Rev.5
+        reference: SC-8 Transmission Confidentiality and Integrity
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: FED-SEC-003
+    title: Inference services must be restricted by a NetworkPolicy
+    description: >-
+      The namespace of an inference workload should have a NetworkPolicy selecting its Pods to limit lateral access.
+    severity: medium
+    type: automated
+    category: network
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      field: network_policy.present
+      op: eq
+      value: true
+    remediation: >-
+      Create a default-deny NetworkPolicy for inference Pods, allowing ingress only from gateway/caller namespaces.
+    sources:
+      - framework: NIST SP 800-190
+        reference: 4.4 Orchestrator Risks (network segmentation)
+        url: https://doi.org/10.6028/NIST.SP.800-190
+
+  - id: FED-SEC-004
+    title: Container images must be pinned by digest and must not use the latest tag
+    description: >-
+      Inference images should be referenced by @sha256 digest to ensure deployment traceability and integrity.
+    severity: medium
+    type: automated
+    category: supply-chain
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      all:
+        - field: image.all_digest_pinned
+          op: eq
+          value: true
+        - field: image.any_latest
+          op: eq
+          value: false
+    remediation: >-
+      Change image references to registry/repo@sha256:<digest>, and sign images in CI (e.g., cosign) before deployment.
+    sources:
+      - framework: NIST SP 800-218A
+        reference: SSDF for Generative AI and Dual-Use Foundation Models (software integrity)
+        url: https://doi.org/10.6028/NIST.SP.800-218A
+
+  - id: FED-SEC-005
+    title: Inference containers must not run as root or in privileged mode
+    description: Containers must set runAsNonRoot and disallow privileged mode and privilege escalation.
+    severity: high
+    type: automated
+    category: workload-hardening
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      all:
+        - field: security_context.run_as_non_root
+          op: eq
+          value: true
+        - field: security_context.privileged
+          op: eq
+          value: false
+        - field: security_context.allow_privilege_escalation
+          op: eq
+          value: false
+    remediation: >-
+      Set runAsNonRoot: true, privileged: false, and allowPrivilegeEscalation: false in securityContext. Provide
+      GPU access through a device plugin rather than privileged containers.
+    sources:
+      - framework: NIST SP 800-190
+        reference: 4.1 Image / 4.5 Host OS Risks (least privilege)
+        url: https://doi.org/10.6028/NIST.SP.800-190
+
+  - id: FED-SEC-006
+    title: Secrets must not be stored in plaintext environment variables
+    description: >-
+      Model API keys, HF tokens, cloud credentials, etc. must not be written as plaintext values in Pod environment
+      variables.
+    severity: critical
+    type: automated
+    category: secrets
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      field: secrets.plaintext_env
+      op: empty
+    remediation: >-
+      Use valueFrom.secretKeyRef or an external secrets manager (Vault / CSI Secrets Store), and rotate any exposed
+      credentials.
+    sources:
+      - framework: NIST SP 800-53 Rev.5
+        reference: IA-5 Authenticator Management
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: FED-SEC-007
+    title: Inference containers must set resource limits
+    description: Set CPU/memory/GPU limits to reduce the impact of resource-exhaustion attacks and runaway 
+      workloads.
+    severity: low
+    type: automated
+    category: resilience
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      field: resources.limits_set
+      op: eq
+      value: true
+    remediation: >-
+      Configure resources.limits for every container, and set a ResourceQuota / LimitRange on the namespace.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: MEASURE 2.7 (AI system security and resilience evaluated)
+        url: https://www.nist.gov/itl/ai-risk-management-framework

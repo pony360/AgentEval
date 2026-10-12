@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../agenteval/schemas/attestations.schema.json
+# Remaining attestations needed for certification (demo data). Pre-deployment testing evidence comes from a passing evaluation.
+attestations:
+  - rule_id: FED-GOV-A03
+    asset_id: deployment/ml-prod/llama-chat
+    attested_by: genai-platform@example.com
+    attested_at: 2026-09-28
+    evidence:
+      human_oversight_procedure: https://wiki.example.internal/support-bot/human-escalation-sop
+
+  - rule_id: FED-IR-001
+    asset_id: "*"
+    attested_by: security-ops@example.com
+    attested_at: 2026-09-15
+    evidence:
+      incident_response_plan: https://wiki.example.internal/security/ai-incident-response-v1

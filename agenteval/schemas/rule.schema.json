@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/rule.schema.json",
+  "title": "AgentEval rule file",
+  "description": "A rules YAML file: a single rule, a list of rules, or {rules: [...]}.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/rule"
+    },
+    {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    },
+    {
+      "type": "object",
+      "required": [
+        "rules"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "rules": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/rule"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": [
+            "all"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "all": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "any"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "any": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "$ref": "#/$defs/condition"
+              }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "not"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "not": {
+              "$ref": "#/$defs/condition"
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": [
+            "field",
+            "op"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "field": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)*$"
+            },
+            "op": {
+              "enum": [
+                "eq",
+                "ne",
+                "in",
+                "not_in",
+                "exists",
+                "not_exists",
+                "truthy",
+                "falsy",
+                "contains",
+                "not_contains",
+                "regex",
+                "gt",
+                "gte",
+                "lt",
+                "lte",
+                "empty",
+                "not_empty"
+              ]
+            },
+            "value": {}
+          }
+        }
+      ]
+    },
+    "rule": {
+      "type": "object",
+      "required": [
+        "id",
+        "title",
+        "description",
+        "severity",
+        "type",
+        "category",
+        "applies_to",
+        "remediation",
+        "sources"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "description": "Unique rule ID: an uppercase prefix plus segments, e.g. FED-SEC-001.",
+          "type": "string",
+          "pattern": "^[A-Z]{2,6}(-[A-Z0-9]{2,8})+$"
+        },
+        "title": {
+          "description": "One-line requirement, phrased as what must be true.",
+          "type": "string",
+          "minLength": 3
+        },
+        "description": {
+          "description": "Why the rule exists and what it checks.",
+          "type": "string",
+          "minLength": 3
+        },
+        "severity": {
+          "description": "critical/high block certification by default.",
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        },
+        "type": {
+          "description": "automated = evaluated from collected facts; attestation = needs human evidence.",
+          "enum": [
+            "automated",
+            "attestation"
+          ]
+        },
+        "jurisdiction": {
+          "description": "Optional override; normally inherited from pack.yaml.",
+          "type": "string"
+        },
+        "category": {
+          "description": "Free-form grouping, e.g. security, governance, privacy.",
+          "type": "string"
+        },
+        "applies_to": {
+          "description": "Which assets the rule targets.",
+          "type": "object",
+          "required": [
+            "asset_types"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "asset_types": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "Asset types, e.g. inference_service, cluster."
+            },
+            "when": {
+              "description": "Optional pre-filter; if false the rule is not_applicable.",
+              "$ref": "#/$defs/condition"
+            }
+          }
+        },
+        "check": {
+          "description": "Condition that must evaluate to true for the asset to PASS (automated rules).",
+          "$ref": "#/$defs/condition"
+        },
+        "attestation": {
+          "description": "Evidence a human must supply (attestation rules).",
+          "type": "object",
+          "required": [
+            "evidence_required"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "evidence_required": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "Evidence keys that must all be present and non-empty."
+            },
+            "max_age_days": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Attestation older than this fails."
+            }
+          }
+        },
+        "remediation": {
+          "description": "Concrete fix shown in reports.",
+          "type": "string"
+        },
+        "sources": {
+          "description": "Regulatory or framework references. Mark verified: true only after legal review.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "framework",
+              "reference"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "framework": {
+                "type": "string"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string"
+              },
+              "verified": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "effective_date": {
+          "description": "ISO date the obligation takes effect (quote it in YAML).",
+          "type": "string",
+          "format": "date"
+        },
+        "version": {
+          "description": "Bump when the rule logic changes.",
+          "type": "string"
+        },
+        "enabled": {
+          "description": "Set false to keep a rule in the repo without running it.",
+          "type": "boolean"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "automated"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "check"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "attestation"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "attestation"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

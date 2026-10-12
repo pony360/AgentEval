@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=../../agenteval/schemas/rule.schema.json
+# PCI DSS v4.0.1 industry rule pack: covers only technical controls the scanner can verify.
+rules:
+  - id: PCI-REQ3-001
+    title: Logs of AI services that handle payment conversations must not store full card numbers
+    description: >-
+      If a customer-facing AI service logs conversations, the primary account number (PAN) must be unreadable (masked
+      or truncated) in the logs.
+    severity: high
+    type: automated
+    jurisdiction: industry:payments
+    category: data-protection
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        all:
+          - {field: customer_facing, op: eq, value: true}
+          - {field: logging.request_logging, op: eq, value: true}
+    check: {field: logging.pii_redaction, op: eq, value: true}
+    remediation: >-
+      Detect and mask card numbers before writing logs (for example, keep only the last four digits), and add the
+      annotation agenteval.io/log-redaction="true".
+    sources:
+      - framework: PCI DSS v4.0.1
+        reference: Requirement 3.5.1 (PAN is rendered unreadable anywhere it is stored)
+
+  - id: PCI-REQ4-001
+    title: Internet-facing payment-related AI services must use strong cryptography in transit
+    description: Customer-facing AI services exposed over public networks must enable TLS.
+    severity: high
+    type: automated
+    jurisdiction: industry:payments
+    category: data-protection
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        all:
+          - {field: customer_facing, op: eq, value: true}
+          - {field: exposure.public, op: eq, value: true}
+    check: {field: tls.enabled, op: eq, value: true}
+    remediation: Configure TLS with a trusted certificate on the Ingress and disable plaintext HTTP.
+    sources:
+      - framework: PCI DSS v4.0.1
+        reference: Requirement 4.2.1 (strong cryptography when transmitting PAN over public networks)
+
+  - id: PCI-REQ8-001
+    title: Access to payment-related AI services must be authenticated
+    description: Backend endpoints of customer-facing AI services must not allow anonymous calls.
+    severity: high
+    type: automated
+    jurisdiction: industry:payments
+    category: access-control
+    applies_to:
+      asset_types: [inference_service]
+      when: {field: customer_facing, op: eq, value: true}
+    check: {field: auth.enabled, op: eq, value: true}
+    remediation: >-
+      Protect the inference endpoint with an API gateway or authentication proxy, and issue separate credentials
+      per caller.
+    sources:
+      - framework: PCI DSS v4.0.1
+        reference: Requirement 8 (identify users and authenticate access to system components)
+
+  - id: PCI-REQ10-001
+    title: Payment-related AI services must keep audit logs and be monitored
+    description: >-
+      Customer-facing AI services must log requests and be connected to monitoring so anomalies can be detected
+      and investigated.
+    severity: medium
+    type: automated
+    jurisdiction: industry:payments
+    category: monitoring
+    applies_to:
+      asset_types: [inference_service]
+      when: {field: customer_facing, op: eq, value: true}
+    check:
+      all:
+        - {field: logging.request_logging, op: eq, value: true}
+        - {field: monitoring.enabled, op: eq, value: true}
+    remediation: Enable (redacted) request logging and connect the service to central monitoring and alerting.
+    sources:
+      - framework: PCI DSS v4.0.1
+        reference: Requirement 10.2 (audit logs record events)

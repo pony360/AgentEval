@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../agenteval/schemas/pack.schema.json
+id: us-federal
+name: US federal guidance
+name_zh: 美国联邦指引
+tier: national
+jurisdiction: US
+description: NIST AI RMF, NIST AI 600-1, NIST SP 800-53/190/218A, OMB M-25-21
+description_zh: NIST AI RMF、NIST AI 600-1、NIST SP 800-53/190/218A、OMB M-25-21

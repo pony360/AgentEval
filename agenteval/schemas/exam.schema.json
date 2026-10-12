@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/exam.schema.json",
+  "title": "agenteval exam paper",
+  "type": "object",
+  "required": ["id", "title", "domain", "version", "dimensions", "cases"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{2,63}$"},
+    "title": {"type": "string", "minLength": 3},
+    "domain": {"type": "string"},
+    "version": {"type": "string"},
+    "language": {"type": "string"},
+    "description": {"type": "string"},
+    "passing_score": {"type": "number", "minimum": 0, "maximum": 100},
+    "case_passing_score": {"type": "number", "minimum": 0, "maximum": 100},
+    "context": {"type": "string"},
+    "tools": {"type": "array", "items": {"type": "object", "required": ["name"]}},
+    "dimensions": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "name", "weight"], "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z_]+$"},
+          "name": {"type": "string"},
+          "weight": {"type": "number", "exclusiveMinimum": 0},
+          "description": {"type": "string"}
+        }
+      }
+    },
+    "cases": {
+      "type": "array", "minItems": 1,
+      "items": {
+        "type": "object", "required": ["id", "title", "category", "turns"], "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[A-Z]{2,6}-[0-9]{3}$"},
+          "title": {"type": "string"},
+          "category": {"type": "string"},
+          "difficulty": {"enum": ["easy", "medium", "hard"]},
+          "weight": {"type": "number", "exclusiveMinimum": 0},
+          "tags": {"type": "array", "items": {"type": "string"}},
+          "tool_mocks": {"type": "object"},
+          "turns": {
+            "type": "array", "minItems": 1,
+            "items": {
+              "type": "object", "required": ["user"], "additionalProperties": false,
+              "properties": {
+                "user": {"type": "string", "minLength": 1},
+                "expect": {"type": "array", "items": {"$ref": "#/$defs/assertion"}}
+              }
+            }
+          },
+          "rubric": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["id", "dimension", "criterion"], "additionalProperties": false,
+              "properties": {
+                "id": {"type": "string"},
+                "dimension": {"type": "string"},
+                "criterion": {"type": "string", "minLength": 5},
+                "weight": {"type": "number", "exclusiveMinimum": 0},
+                "signals": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "assertion": {
+      "type": "object", "required": ["type", "dimension"], "additionalProperties": false,
+      "properties": {
+        "type": {"enum": ["contains", "contains_any", "contains_all", "not_contains", "regex", "not_regex",
+                          "tool_called", "tool_not_called", "max_latency_ms", "min_chars", "max_chars"]},
+        "value": {},
+        "dimension": {"type": "string"},
+        "weight": {"type": "number", "exclusiveMinimum": 0},
+        "critical": {"type": "boolean"},
+        "args_contains": {"type": "object"},
+        "description": {"type": "string"}
+      }
+    }
+  }
+}

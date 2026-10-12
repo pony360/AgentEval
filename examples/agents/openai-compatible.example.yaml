@@ -1,0 +1,15 @@
+# Evaluate any OpenAI-compatible endpoint (vLLM / TGI / enterprise gateway / cloud service).
+# If the agent returns tool_calls, the evaluator fills in results from the paper's tool_mocks and continues.
+name: llama-chat-prod
+description: Self-hosted vLLM serving Llama-3.1-8B-Instruct behind the gateway.
+adapter: openai
+openai:
+  base_url: https://chat.example.com/v1        # requests {base_url}/chat/completions
+  model: meta-llama/Llama-3.1-8B-Instruct
+  api_key_env: LLAMA_CHAT_API_KEY              # key is read from the environment only
+  system_prompt: "You are a helpful, concise customer service assistant."
+  inject_paper_context: true                   # inject the paper's business context as a system prompt (for raw models / simple agents)
+  send_tools: true
+  temperature: 0
+  timeout_s: 60
+  max_tool_rounds: 3

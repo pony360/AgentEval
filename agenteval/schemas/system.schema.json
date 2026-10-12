@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/system.schema.json",
+  "title": "AgentEval AI system registration (certification/systems/*.yaml)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "organization",
+    "asset_id",
+    "agent_name",
+    "exam",
+    "rule_packs"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "name_zh": {
+      "type": "string"
+    },
+    "organization": {
+      "type": "string",
+      "minLength": 1
+    },
+    "industry": {
+      "type": "string"
+    },
+    "description": {
+      "type": "string"
+    },
+    "description_zh": {
+      "type": "string"
+    },
+    "asset_id": {
+      "type": "string",
+      "pattern": "^[a-z]+/[^/]+(/[^/]+)?$",
+      "description": "Scanned asset, e.g. deployment/<namespace>/<name>."
+    },
+    "model": {
+      "type": "string"
+    },
+    "agent": {
+      "type": "string",
+      "description": "Optional agent config file name."
+    },
+    "agent_name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Agent name recorded in evaluation runs."
+    },
+    "exam": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Exam paper ID the agent must pass."
+    },
+    "rule_packs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]{1,62}$"
+      }
+    },
+    "contact": {
+      "type": "string"
+    }
+  }
+}

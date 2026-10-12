@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/pack.schema.json",
+  "title": "AgentEval rule pack metadata (pack.yaml)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "tier",
+    "jurisdiction"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{1,62}$",
+      "description": "Stable pack ID referenced by systems' rule_packs."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Display name (English, the source language)."
+    },
+    "name_zh": {
+      "type": "string",
+      "description": "Optional Simplified Chinese display name."
+    },
+    "tier": {
+      "enum": [
+        "national",
+        "regional",
+        "industry"
+      ],
+      "description": "Where the obligations come from."
+    },
+    "jurisdiction": {
+      "type": "string",
+      "minLength": 1,
+      "description": "e.g. US, US-CA, or an industry code such as PCI-DSS."
+    },
+    "description": {
+      "type": "string"
+    },
+    "description_zh": {
+      "type": "string"
+    }
+  }
+}

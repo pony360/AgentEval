@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="{{ t.html_lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t.title }} {{ r.scan_id }}</title>
+<style>
+  :root { --bg:#fff; --fg:#1b1d22; --muted:#5d6370; --line:#e3e5ea; --card:#f7f8fa;
+          --fail:#c0352b; --pass:#2f7d4f; --manual:#9a6a00; --na:#6b7280; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#14161a; --fg:#e8eaee; --muted:#9aa1ad; --line:#2b2f37; --card:#1c1f25;
+            --fail:#ff7a6e; --pass:#6fd39b; --manual:#f0c060; --na:#9aa1ad; }
+  }
+  body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.5 system-ui, -apple-system, "PingFang SC", sans-serif; }
+  main { max-width:1100px; margin:0 auto; padding:24px 16px 48px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .meta { color:var(--muted); font-size:13px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin:20px 0; }
+  .tile { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .tile b { display:block; font-size:24px; }
+  .disclaimer { border-left:3px solid var(--manual); padding:8px 12px; background:var(--card); font-size:13px; }
+  table { width:100%; border-collapse:collapse; margin-top:16px; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; color:var(--muted); font-weight:600; }
+  .st { font-weight:600; white-space:nowrap; }
+  .st-fail { color:var(--fail); } .st-pass { color:var(--pass); }
+  .st-manual { color:var(--manual); } .st-not_applicable, .st-error { color:var(--na); }
+  details summary { cursor:pointer; color:var(--muted); }
+  pre { white-space:pre-wrap; word-break:break-all; font-size:12px; margin:4px 0 0; }
+  .wrap { overflow-x:auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>{{ t.title }}</h1>
+  <div class="meta">{{ t.scan_id }} {{ r.scan_id }} · {{ t.source }} {{ r.source }} · {{ t.rules_version }} {{ r.rules_version }} · {{ r.started_at.strftime('%Y-%m-%d %H:%M UTC') }}</div>
+
+  <div class="tiles">
+    <div class="tile"><b>{{ r.summary.score }}%</b>{{ t.score }}</div>
+    <div class="tile"><b>{{ r.asset_count }}</b>{{ t.assets }}</div>
+    <div class="tile"><b>{{ r.summary.by_status.get('fail', 0) }}</b>{{ t.failed }}</div>
+    <div class="tile"><b>{{ r.summary.by_status.get('manual', 0) }}</b>{{ t.manual }}</div>
+    <div class="tile"><b>{{ r.summary.by_status.get('pass', 0) }}</b>{{ t.passed }}</div>
+  </div>
+
+  <p class="disclaimer">{{ r.disclaimer }}</p>
+
+  <div class="wrap">
+  <table>
+    <thead><tr><th>{{ t.col_status }}</th><th>{{ t.col_severity }}</th><th>{{ t.col_rule }}</th><th>{{ t.col_asset }}</th><th>{{ t.col_detail }}</th></tr></thead>
+    <tbody>
+    {% for f in r.findings %}
+      <tr>
+        <td class="st st-{{ f.status.value }}">{{ t['status_' ~ f.status.value] }}</td>
+        <td>{{ t['sev_' ~ f.severity.value] }}</td>
+        <td><b>{{ f.rule_id }}</b><br>{{ f.rule_title }}</td>
+        <td>{{ f.asset_id }}</td>
+        <td>
+          {{ f.message }}
+          {% if f.status.value in ('fail', 'manual') %}
+          <details><summary>{{ t.remediation }}</summary>
+            <p>{{ f.remediation }}</p>
+            <ul>{% for s in f.sources %}<li>{{ s.framework }} — {{ s.reference }}{% if not s.verified %}{{ t.unverified }}{% endif %}</li>{% endfor %}</ul>
+          </details>
+          {% endif %}
+          {% if f.evidence %}<details><summary>{{ t.evidence }}</summary><pre>{{ f.evidence | tojson_pretty }}</pre></details>{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</main>
+</body>
+</html>

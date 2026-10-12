@@ -1,0 +1,323 @@
+{
+  "cluster": {
+    "name": "gpu-prod-sandbox"
+  },
+  "workloads": [
+    {
+      "kind": "Deployment",
+      "metadata": {
+        "name": "llama-chat",
+        "namespace": "ml-prod",
+        "labels": {
+          "app": "llama-chat",
+          "agenteval.io/owner": "genai-platform"
+        },
+        "annotations": {
+          "agenteval.io/model": "meta-llama/Llama-3.1-8B-Instruct",
+          "agenteval.io/model-source": "huggingface:meta-llama/Llama-3.1-8B-Instruct@rev-0e9e39f",
+          "agenteval.io/model-card": "https://wiki.example.internal/models/llama-3.1-8b",
+          "agenteval.io/provenance-verified": "true",
+          "agenteval.io/risk-tier": "high-impact",
+          "agenteval.io/request-logging": "true",
+          "agenteval.io/content-safety": "llama-guard-3",
+          "agenteval.io/customer-facing": "true",
+          "agenteval.io/ai-disclosure": "true",
+          "agenteval.io/log-redaction": "true"
+        }
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "llama-chat"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "llama-chat"
+            },
+            "annotations": {
+              "prometheus.io/scrape": "true"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsNonRoot": true,
+              "runAsUser": 1000
+            },
+            "containers": [
+              {
+                "name": "vllm",
+                "image": "registry.example.internal/vllm/vllm-openai@sha256:3b1f9c2e7a4d5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcd",
+                "args": [
+                  "--model",
+                  "meta-llama/Llama-3.1-8B-Instruct",
+                  "--port",
+                  "8000"
+                ],
+                "env": [
+                  {
+                    "name": "VLLM_API_KEY",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "llama-chat-api",
+                        "key": "key"
+                      }
+                    }
+                  },
+                  {
+                    "name": "VLLM_LOGGING_LEVEL",
+                    "value": "INFO"
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "privileged": false
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "8",
+                    "memory": "48Gi",
+                    "nvidia.com/gpu": "1"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "kind": "Deployment",
+      "metadata": {
+        "name": "mistral-test",
+        "namespace": "ml-dev",
+        "labels": {
+          "app": "mistral-test"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "mistral-test"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "mistral-test"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "tgi",
+                "image": "ghcr.io/huggingface/text-generation-inference:latest",
+                "env": [
+                  {
+                    "name": "MODEL_ID",
+                    "value": "mistralai/Mistral-7B-Instruct-v0.3"
+                  },
+                  {
+                    "name": "HF_TOKEN",
+                    "value": "hf_REDACTED_EXAMPLE"
+                  }
+                ],
+                "securityContext": {
+                  "privileged": true
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "kind": "StatefulSet",
+      "metadata": {
+        "name": "embeddings",
+        "namespace": "ml-prod",
+        "labels": {
+          "app": "embeddings",
+          "team": "search-infra"
+        },
+        "annotations": {
+          "agenteval.io/model": "bge-large-en-v1.5"
+        }
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "embeddings"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "embeddings"
+            }
+          },
+          "spec": {
+            "securityContext": {
+              "runAsUser": 1000
+            },
+            "containers": [
+              {
+                "name": "triton",
+                "image": "nvcr.io/nvidia/tritonserver:24.08-py3",
+                "securityContext": {
+                  "allowPrivilegeEscalation": false
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "4",
+                    "memory": "16Gi"
+                  }
+                }
+              },
+              {
+                "name": "auth-proxy",
+                "image": "quay.io/oauth2-proxy/oauth2-proxy:v7.6.0",
+                "securityContext": {
+                  "allowPrivilegeEscalation": false
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "128Mi"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "kind": "Deployment",
+      "metadata": {
+        "name": "docs-site",
+        "namespace": "web",
+        "labels": {
+          "app": "docs-site"
+        }
+      },
+      "spec": {
+        "selector": {
+          "matchLabels": {
+            "app": "docs-site"
+          }
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "docs-site"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "nginx",
+                "image": "nginx:1.27"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "services": [
+    {
+      "metadata": {
+        "name": "llama-chat",
+        "namespace": "ml-prod"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "llama-chat"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "mistral-test",
+        "namespace": "ml-dev"
+      },
+      "spec": {
+        "type": "LoadBalancer",
+        "selector": {
+          "app": "mistral-test"
+        }
+      }
+    },
+    {
+      "metadata": {
+        "name": "embeddings",
+        "namespace": "ml-prod"
+      },
+      "spec": {
+        "type": "ClusterIP",
+        "selector": {
+          "app": "embeddings"
+        }
+      }
+    }
+  ],
+  "ingresses": [
+    {
+      "metadata": {
+        "name": "llama-chat",
+        "namespace": "ml-prod"
+      },
+      "spec": {
+        "tls": [
+          {
+            "hosts": [
+              "chat.example.com"
+            ],
+            "secretName": "chat-tls"
+          }
+        ],
+        "rules": [
+          {
+            "host": "chat.example.com",
+            "http": {
+              "paths": [
+                {
+                  "path": "/",
+                  "pathType": "Prefix",
+                  "backend": {
+                    "service": {
+                      "name": "llama-chat",
+                      "port": {
+                        "number": 8000
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "network_policies": [
+    {
+      "metadata": {
+        "name": "default-deny",
+        "namespace": "ml-prod"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ]
+      }
+    }
+  ]
+}

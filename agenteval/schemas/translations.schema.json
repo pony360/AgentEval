@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/translations.schema.json",
+  "title": "AgentEval rule translations (i18n/<lang>.yaml)",
+  "type": "object",
+  "propertyNames": {
+    "pattern": "^[A-Z]{2,6}(-[A-Z0-9]{2,8})+$"
+  },
+  "additionalProperties": {
+    "type": "object",
+    "additionalProperties": false,
+    "minProperties": 1,
+    "properties": {
+      "title": {
+        "type": "string"
+      },
+      "description": {
+        "type": "string"
+      },
+      "remediation": {
+        "type": "string"
+      },
+      "sources": {
+        "type": "array",
+        "items": {
+          "type": "string"
+        },
+        "description": "Translated source references, in the same order as the rule's sources."
+      }
+    }
+  }
+}

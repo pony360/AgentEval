@@ -1,0 +1,61 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agenteval"
+version = "0.1.0"
+description = "Scan AI infrastructure against policy-as-code rule packs, evaluate AI agents with standard exams, and issue signed certificates when both pass."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "The AgentEval Authors" }]
+keywords = ["ai-governance", "compliance", "policy-as-code", "llm-evaluation", "ai-agents", "kubernetes", "certification"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: System Administrators",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Security",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+  "pydantic>=2.6",
+  "PyYAML>=6.0",
+  "jsonschema>=4.21",
+  "typer>=0.12",
+  "Jinja2>=3.1",
+  "httpx>=0.27",
+  "cryptography>=42",
+  "qrcode>=7.4",
+]
+
+[project.optional-dependencies]
+kubernetes = ["kubernetes>=29.0"]
+pdf = ["playwright>=1.44"]
+dev = ["pytest>=8.0", "build>=1.2"]
+
+[project.urls]
+Homepage = "https://github.com/OWNER/agenteval"
+Source = "https://github.com/OWNER/agenteval"
+Issues = "https://github.com/OWNER/agenteval/issues"
+Changelog = "https://github.com/OWNER/agenteval/blob/main/CHANGELOG.md"
+
+[project.scripts]
+agenteval = "agenteval.cli:app"
+
+[tool.setuptools.packages.find]
+include = ["agenteval*"]
+
+[tool.setuptools.package-data]
+agenteval = ["schemas/*.json", "reports/templates/*.j2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

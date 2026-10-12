@@ -1,0 +1,19 @@
+AgentEval
+Copyright 2026 The AgentEval Authors
+
+This product includes software developed by The AgentEval Authors and is
+licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Rule packs, exam papers and certification policies in this repository are
+technical starter content. Rule-to-regulation mappings are provided for
+convenience, are marked "verified: false" until reviewed, and do not
+constitute legal advice or a determination of regulatory compliance.
+
+Names of frameworks, standards and regulations (including NIST publications,
+PCI DSS, and California statutes) are used nominatively to identify source
+material. PCI DSS is a standard of the PCI Security Standards Council, LLC.
+No endorsement by or affiliation with any standards body or regulator is
+implied.
+
+"Northwind Outfitters" and all example organizations, hosts and data in the
+examples/ directory are fictional.

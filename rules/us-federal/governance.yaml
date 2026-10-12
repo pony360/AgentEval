@@ -1,0 +1,216 @@
+# yaml-language-server: $schema=../../agenteval/schemas/rule.schema.json
+# AI governance, transparency and monitoring controls (automated checks + attestations)
+rules:
+  - id: FED-INV-001
+    title: AI systems must register an owner and model information
+    description: >-
+      Each inference service must be labeled with its owning team and the model it serves, to support AI system
+      inventory management.
+    severity: medium
+    type: automated
+    category: inventory
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      all:
+        - field: owner
+          op: not_empty
+        - field: model.name
+          op: not_empty
+    remediation: >-
+      Add the label agenteval.io/owner=<team> and the annotation agenteval.io/model=<model-name> to the workload.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: GOVERN 1.6 (mechanisms to inventory AI systems)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+      - framework: OMB M-25-21
+        reference: AI use case inventory (applies to federal agencies)
+
+  - id: FED-PRV-001
+    title: Models must have traceable provenance and pass integrity verification
+    description: >-
+      Record the source of model weights (internally trained / third-party repository) and verify their hash or
+      signature.
+    severity: high
+    type: automated
+    category: supply-chain
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      all:
+        - field: model.source
+          op: not_empty
+        - field: model.provenance_verified
+          op: eq
+          value: true
+    remediation: >-
+      Add the annotation agenteval.io/model-source=<source>; verify sha256 or signatures when pulling weights, then
+      set agenteval.io/provenance-verified="true" (ideally written automatically by CI or an admission controller).
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: GOVERN 6.1 (policies for third-party AI risks)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+      - framework: NIST SP 800-218A
+        reference: Integrity protection of models and training data
+        url: https://doi.org/10.6028/NIST.SP.800-218A
+
+  - id: FED-TRN-001
+    title: Models must have a model card or equivalent documentation
+    description: >-
+      Documentation should describe intended use, capability boundaries, known limitations, and evaluation results.
+    severity: medium
+    type: automated
+    category: transparency
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      field: model.card_url
+      op: not_empty
+    remediation: >-
+      Add the annotation agenteval.io/model-card=<doc-link>, covering intended use, limitations, and evaluation
+      methods.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: MAP function (documentation of system capabilities and limitations)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+
+  - id: FED-MON-001
+    title: Inference services must enable request logging and runtime monitoring
+    description: >-
+      Continuous post-deployment monitoring is needed to detect misuse, performance degradation, and security incidents.
+    severity: medium
+    type: automated
+    category: monitoring
+    applies_to:
+      asset_types: [inference_service]
+    check:
+      all:
+        - field: logging.request_logging
+          op: eq
+          value: true
+        - field: monitoring.enabled
+          op: eq
+          value: true
+    remediation: >-
+      Enable request logging at the gateway/service (with redaction), expose Prometheus metrics, and add the annotations
+      agenteval.io/request-logging="true" and prometheus.io/scrape="true".
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: MANAGE 4.1 (post-deployment monitoring plans)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+
+  - id: FED-SAF-001
+    title: Generative models must enable content safety safeguards
+    description: >-
+      Inputs/outputs of generative models should pass through safety filters or guardrails (e.g., Llama Guard, NeMo
+      Guardrails).
+    severity: medium
+    type: automated
+    category: safety
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        field: model.generative
+        op: eq
+        value: true
+    check:
+      field: content_safety.enabled
+      op: eq
+      value: true
+    remediation: >-
+      Deploy a guardrail service or sidecar, and add the annotation agenteval.io/content-safety=<solution-name>.
+    sources:
+      - framework: NIST AI 600-1
+        reference: Generative AI Profile (harmful content and information security risks)
+        url: https://doi.org/10.6028/NIST.AI.600-1
+
+  # ---------- Attestation-based ----------
+  - id: FED-GOV-A01
+    title: The organization must have an AI governance policy and an accountable owner
+    description: >-
+      A written AI risk management policy defining roles, responsibilities, and approval processes, reviewed annually.
+    severity: high
+    type: attestation
+    category: governance
+    applies_to:
+      asset_types: [cluster]
+    attestation:
+      evidence_required: [ai_policy_document, accountable_owner]
+      max_age_days: 365
+    remediation: >-
+      Establish and publish an AI governance policy, designate an accountable owner, and submit the link and approval
+      record via the attestations file.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: GOVERN 1 / GOVERN 2 (policies and accountability structures)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+
+  - id: FED-IR-001
+    title: An AI security incident response plan must be in place
+    description: >-
+      Response and escalation procedures covering model misuse, data leakage, harmful outputs, etc., exercised or
+      reviewed annually.
+    severity: medium
+    type: attestation
+    category: incident-response
+    applies_to:
+      asset_types: [cluster]
+    attestation:
+      evidence_required: [incident_response_plan]
+      max_age_days: 365
+    remediation: >-
+      Write an AI incident response plan, integrate it into the existing security incident process, and submit the
+      document link.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: MANAGE 4 (risk treatment and incident communication)
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+
+  - id: FED-GOV-A02
+    title: High-impact AI must complete an impact assessment and pre-deployment testing
+    description: >-
+      AI services marked high-impact must complete an AI impact assessment and real-world validation before launch,
+      updated annually.
+    severity: high
+    type: attestation
+    category: governance
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        field: risk_tier
+        op: eq
+        value: high-impact
+    attestation:
+      evidence_required: [impact_assessment, pre_deployment_testing]
+      max_age_days: 365
+    remediation: >-
+      Complete the AI impact assessment and pre-deployment test report, and submit them to the attestations file
+      after approval.
+    sources:
+      - framework: OMB M-25-21
+        reference: Minimum risk management practices for high-impact AI (applies to federal agencies; 
+          private-sector organizations may use as reference)
+      - framework: NIST AI RMF 1.0
+        reference: MAP 5.1 / MEASURE function
+        url: https://www.nist.gov/itl/ai-risk-management-framework
+
+  - id: FED-GOV-A03
+    title: High-impact AI must have human oversight and an appeal mechanism
+    description: Provide human review, intervention, and appeal channels for high-impact decisions.
+    severity: high
+    type: attestation
+    category: governance
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        field: risk_tier
+        op: eq
+        value: high-impact
+    attestation:
+      evidence_required: [human_oversight_procedure]
+      max_age_days: 365
+    remediation: >-
+      Document human oversight and appeal procedures, and implement a human review entry point in the service.
+    sources:
+      - framework: OMB M-25-21
+        reference: Human oversight, intervention, and accountability requirements for high-impact AI

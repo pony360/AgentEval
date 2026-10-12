@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../agenteval/schemas/pack.schema.json
+id: us-ca
+name: California
+name_zh: 加利福尼亚州
+tier: regional
+jurisdiction: US-CA
+description: SB 1001 bot disclosure, CCPA/CPRA data minimization, AB 2013 
+  training-data transparency (starter pack, pending legal review)
+description_zh: SB 1001 机器人身份披露、CCPA/CPRA 数据最小化、AB 2013 训练数据透明度（入门规则包，待法务审核）

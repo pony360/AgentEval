@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../agenteval/schemas/policy.schema.json
+# Certification policy: both scores must be strictly greater than their thresholds, and all hard gates must pass.
+min_security_score: 90          # system-scoped security compliance score (scan); must be > 90
+min_quality_score: 90           # overall evaluation score; must be > 90
+block_on_severities: [critical, high]   # no certificate if open findings of these severities exist in scope
+require_no_pending_attestations: true   # no pending attestations allowed in scope
+require_zero_critical_eval_failures: true
+require_no_eval_errors: true
+require_llm_judge: true         # evaluations using the offline heuristic judge only earn a DEMO certificate
+allow_demo_certificates: true
+max_evidence_age_days: 30       # scan and evaluation evidence must be within 30 days at issuance
+validity_months: 6
+auto_revoke: true               # auto-revoke if any later scan or evaluation fails a gate
+issuer_name: AgentEval Assurance Service
+issuer_name_zh: AgentEval 认证服务

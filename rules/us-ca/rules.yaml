@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=../../agenteval/schemas/rule.schema.json
+# California starter rule pack (regional tier). All mappings are verified=false and need legal review.
+rules:
+  - id: CA-BOT-001
+    title: Customer-facing conversational AI must disclose that it is a bot
+    description: >-
+      A bot that communicates online with people in California to incentivize a sale or transaction must clearly
+      disclose that it is a bot, not a person.
+    severity: high
+    type: automated
+    jurisdiction: US-CA
+    category: transparency
+    applies_to:
+      asset_types: [inference_service]
+      when: {field: customer_facing, op: eq, value: true}
+    check: {field: ai_disclosure.enabled, op: eq, value: true}
+    remediation: >-
+      Tell users at the start of the conversation that they are talking to an AI assistant, and add the annotation
+      agenteval.io/ai-disclosure="true".
+    sources:
+      - framework: California SB 1001
+        reference: Bus. & Prof. Code §17940–17943 (online bot disclosure)
+    effective_date: "2019-07-01"
+
+  - id: CA-PRIV-001
+    title: Request logs of customer-facing AI services must redact personal information
+    description: >-
+      When conversations are logged, personal information must be redacted, and collection and retention must be
+      proportionate to the purpose.
+    severity: medium
+    type: automated
+    jurisdiction: US-CA
+    category: privacy
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        all:
+          - {field: customer_facing, op: eq, value: true}
+          - {field: logging.request_logging, op: eq, value: true}
+    check: {field: logging.pii_redaction, op: eq, value: true}
+    remediation: >-
+      Redact names, emails, phone numbers, card numbers and similar fields in the gateway or log pipeline, and add
+      the annotation agenteval.io/log-redaction="true".
+    sources:
+      - framework: CCPA / CPRA
+        reference: Cal. Civ. Code §1798.100(c) (data minimization and purpose limitation)
+
+  - id: CA-AB2013-A01
+    title: Generative AI trained or fine-tuned in-house must publish training-data documentation
+    description: >-
+      Generative AI offered to the public in California that the organization trained or substantially modified
+      must publish high-level documentation of its training data.
+    severity: medium
+    type: attestation
+    jurisdiction: US-CA
+    category: transparency
+    applies_to:
+      asset_types: [inference_service]
+      when:
+        all:
+          - {field: model.generative, op: eq, value: true}
+          - {field: model.fine_tuned, op: eq, value: true}
+    attestation:
+      evidence_required: [training_data_documentation_url]
+      max_age_days: 365
+    remediation: >-
+      Publish a training-data documentation page (sources, size, whether personal or copyrighted data is included,
+      etc.) and submit the link.
+    sources:
+      - framework: California AB 2013
+        reference: Generative AI Training Data Transparency (effective 2026-01-01)
+    effective_date: "2026-01-01"

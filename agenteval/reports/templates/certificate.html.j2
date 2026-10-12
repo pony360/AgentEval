@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="{{ t.html_lang }}">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ t.title }} · {{ c.id }}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+  /* 证书为单一视觉：浅色纸面，固定配色以保证打印一致 */
+  :root {
+    --paper: #fbfcfd; --ink: #142036; --muted: #5a6779; --line: #cfd7e1; --soft: #eef2f6;
+    --accent: #145c4f; --accent-soft: #e3f0ec; --bad: #a32020; --bad-soft: #fbe9e9; --demo: #b42318;
+    --serif: "Source Serif 4", "Noto Serif CJK SC", "Songti SC", Georgia, serif;
+    --sans: "IBM Plex Sans", "Inter", "Noto Sans CJK SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "DejaVu Sans Mono", ui-monospace, monospace;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #e6eaef; color: var(--ink); font: 13px/1.45 var(--sans); }
+  .toolbar { max-width: 1062px; margin: 16px auto 0; padding-inline: 16px; display: flex; justify-content: flex-end; }
+  .toolbar button { font: 500 13px var(--sans); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--line);
+                    background: #fff; color: var(--ink); cursor: pointer; }
+  .wrap { overflow-x: auto; padding: 16px; }
+  .sheet { position: relative; width: 1062px; margin: 0 auto; background: var(--paper); padding: 26px 34px 22px;
+           border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(20, 32, 54, .08); overflow: hidden; }
+  .sheet::before { content: ""; position: absolute; inset: 10px; border: 1.5px solid var(--accent); pointer-events: none; }
+  .sheet::after { content: ""; position: absolute; inset: 14px; border: .5px solid var(--accent); opacity: .5; pointer-events: none; }
+  .top { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+  .issuer { font: 600 13px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--accent); }
+  .no { font: 500 12px var(--mono); color: var(--muted); }
+  h1 { font: 600 30px/1.15 var(--serif); text-align: center; margin: 14px 0 4px; letter-spacing: .01em; }
+  .certifies { text-align: center; color: var(--muted); margin: 6px 0 2px; }
+  .name { font: 600 26px/1.2 var(--serif); text-align: center; margin: 0; text-wrap: balance; }
+  .org { text-align: center; color: var(--muted); margin: 2px 0 0; }
+  .statement { text-align: center; max-width: 760px; margin: 8px auto 0; }
+  .facts { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 22px; margin-top: 8px; font-size: 12px; color: var(--muted); }
+  .facts b { color: var(--ink); font-weight: 500; font-family: var(--mono); font-size: 11.5px; }
+  .panels { display: grid; grid-template-columns: 1.25fr 1fr; gap: 16px; margin-top: 14px; }
+  .panel { border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; background: #fff; min-width: 0; }
+  .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .panel-head h2 { font: 600 15px var(--sans); margin: 0; }
+  .panel-head p { margin: 1px 0 0; color: var(--muted); font-size: 11.5px; }
+  .big { font: 600 28px/1 var(--sans); color: var(--accent); white-space: nowrap; text-align: right; }
+  .big small { display: block; font: 400 11px var(--sans); color: var(--muted); margin-top: 3px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--soft); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .pill { display: inline-block; padding: 0 7px; border-radius: 999px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .pill.passed { background: var(--accent-soft); color: var(--accent); }
+  .pill.failed { background: var(--bad-soft); color: var(--bad); }
+  .pill.not_applicable, .pill.not_assessed { background: var(--soft); color: var(--muted); }
+  .meta-q { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 11.5px; color: var(--muted); margin-bottom: 6px; }
+  .meta-q b { color: var(--ink); font-weight: 500; }
+  .bottom { display: grid; grid-template-columns: 1fr auto auto; gap: 18px; align-items: end; margin-top: 14px; }
+  .dates { display: flex; gap: 26px; }
+  .dates div span { display: block; color: var(--muted); font-size: 11px; }
+  .dates div b { font: 600 15px var(--sans); }
+  .evidence { font: 11px/1.5 var(--mono); color: var(--muted); margin-top: 6px; overflow-wrap: anywhere; }
+  .seal { width: 92px; height: 92px; border-radius: 50%; border: 2px solid var(--accent); display: grid; place-items: center;
+          text-align: center; color: var(--accent); font: 600 9.5px/1.25 var(--sans); letter-spacing: .04em; position: relative; }
+  .seal::before { content: ""; position: absolute; inset: 5px; border-radius: 50%; border: .75px solid var(--accent); }
+  .seal b { display: block; font-size: 22px; letter-spacing: 0; }
+  .qr { display: grid; justify-items: center; gap: 4px; width: 150px; }
+  .qr svg { width: 92px; height: 92px; background: #fff; }
+  .qr span { font-size: 10px; color: var(--muted); text-align: center; }
+  .verify-url { font: 9.5px var(--mono); color: var(--muted); overflow-wrap: anywhere; text-align: center; }
+  .sigline { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--soft); display: flex; justify-content: space-between;
+             gap: 16px; font-size: 10.5px; color: var(--muted); }
+  .sigline code { font: 10.5px var(--mono); color: var(--ink); }
+  .disclaimer { font-size: 10px; color: var(--muted); margin: 6px 0 0; }
+  .demo-band { margin-top: 10px; background: var(--bad-soft); color: var(--demo); border: 1px solid #f1c4c0; border-radius: 6px;
+               padding: 5px 10px; font-size: 11.5px; text-align: center; }
+  .demo-band b { letter-spacing: .04em; }
+  .watermark { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .watermark span { transform: rotate(-24deg); font: 700 150px/1 var(--sans); color: rgba(180, 35, 24, .07); letter-spacing: .12em; }
+  .stamp { position: absolute; top: 120px; right: 60px; transform: rotate(-12deg); border: 4px solid var(--bad); color: var(--bad);
+           font: 700 34px/1 var(--sans); padding: 8px 18px; border-radius: 8px; letter-spacing: .08em; background: rgba(255, 255, 255, .7); }
+  @page { size: A4 landscape; margin: 7mm; }
+  @media print {
+    html, body { background: #fff; }
+    .toolbar { display: none; }
+    .wrap { padding: 0; overflow: visible; }
+    .sheet { box-shadow: none; border: none; width: 1062px; zoom: .84; }
+  }
+</style>
+</head>
+<body>
+{% set s = c.subject %}{% set sec = c.assurance.security %}{% set q = c.assurance.quality %}
+{% if printable_button %}<div class="toolbar"><button type="button" onclick="window.print()">{{ t.print }}</button></div>{% endif %}
+<div class="wrap">
+<article class="sheet" aria-label="{{ t.title }}">
+  {% if c.demo %}<div class="watermark" aria-hidden="true"><span>DEMO</span></div>{% endif %}
+  {% if state != 'active' %}<div class="stamp">{{ t['state_' ~ state] }}</div>{% endif %}
+
+  <div class="top">
+    <div class="issuer">{{ c.issuer.name_zh if lang == 'zh' and c.issuer.name_zh else c.issuer.name }}</div>
+    <div class="no">{{ t.cert_no }} {{ c.id }}</div>
+  </div>
+
+  <h1>{{ t.title }}</h1>
+  <p class="certifies">{{ t.certifies }}</p>
+  <p class="name">{{ s.name_zh if lang == 'zh' and s.name_zh else s.name }}</p>
+  <p class="org">{{ s.organization }}{% if s.industry %} · {{ s.industry }}{% endif %}</p>
+  <p class="statement">{{ t.statement }}</p>
+  <div class="facts">
+    <span>{{ t.asset }} <b>{{ s.asset_id }}</b></span>
+    {% if s.model %}<span>{{ t.model }} <b>{{ s.model }}</b></span>{% endif %}
+    <span>{{ t.agent }} <b>{{ s.agent_name }}</b></span>
+  </div>
+
+  <div class="panels">
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>{{ t.security }}</h2><p>{{ t.security_sub }}</p></div>
+        <div class="big">{{ '%.1f' % sec.score }}%<small>{{ t.threshold }} &gt; {{ sec.threshold | int }}%</small></div>
+      </div>
+      <table>
+        <thead><tr><th>{{ t.tier }}</th><th>{{ t.pack }}</th><th>{{ t.checks }}</th><th>{{ t.status }}</th></tr></thead>
+        <tbody>
+        {% for p in sec.packs %}
+          <tr>
+            <td>{{ t[p.tier] if p.tier in ('national', 'regional', 'industry') else t.unknown }}</td>
+            <td>{{ p.name_zh if lang == 'zh' and p.name_zh else p.name }}</td>
+            <td class="num">{{ p.passed }} / {{ p.passed + p.failed + p.manual }}</td>
+            <td><span class="pill {{ p.status }}">{{ t['st_' ~ p.status] }}</span></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    <section class="panel">
+      <div class="panel-head">
+        <div><h2>{{ t.quality }}</h2><p>{{ t.quality_sub }}</p></div>
+        <div class="big">{{ '%.1f' % q.score }}<small>{{ t.grade }} {{ q.grade }} · {{ t.threshold }} &gt; {{ q.threshold | int }}</small></div>
+      </div>
+      <div class="meta-q">
+        <span>{{ t.exam }} <b>{{ q.exam }}@{{ q.exam_version }}</b></span>
+        <span>{{ t.cases }} <b>{{ q.cases_passed }}/{{ q.cases }}</b></span>
+        <span>{{ t.judge }} <b>{{ q.judge }}</b></span>
+      </div>
+      <table>
+        <thead><tr><th>{{ t.dimension }}</th><th>{{ t.score }}</th></tr></thead>
+        <tbody>
+        {% for d in q.dimensions %}
+          <tr><td>{{ d.name }} <span style="color:var(--muted)">· {{ (d.weight * 100) | round | int }}%</span></td>
+              <td class="num">{{ d.score if d.score is not none else '—' }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+
+  {% if c.demo %}<div class="demo-band"><b>{{ t.demo }}</b> — {{ t.demo_reason }}</div>{% endif %}
+
+  <div class="bottom">
+    <div>
+      <div class="dates">
+        <div><span>{{ t.issued }}</span><b>{{ c.issued_at | date }}</b></div>
+        <div><span>{{ t.expires }}</span><b>{{ c.expires_at | date }}</b></div>
+      </div>
+      <div class="evidence">{{ t.evidence }}: {{ t.scan }} {{ sec.scan_id }} · {{ t.rules }} {{ sec.rules_version }} · {{ t.run }} {{ q.run_id }}</div>
+    </div>
+    <div class="seal" aria-hidden="true"><div>AGENTEVAL<b>✓</b>{{ 'ASSURED' if lang == 'en' else '认证' }}</div></div>
+    {% if qr %}<div class="qr">{{ qr }}<span>{{ t.verify }}</span><div class="verify-url">{{ c.verify_url }}</div></div>
+    {% else %}<div class="qr"><span>{{ t.verify_offline }}</span><div class="verify-url">agenteval cert verify {{ c.id }}.json --public-key issuer.pem</div></div>{% endif %}
+  </div>
+
+  <div class="sigline">
+    <span>{{ t.signature }} <code>{{ sig.key_id }}</code></span>
+    <span><code>{{ sig.value[:44] }}…</code></span>
+  </div>
+  <p class="disclaimer">{{ c.disclaimer_zh if lang == 'zh' else c.disclaimer }}</p>
+</article>
+</div>
+</body>
+</html>

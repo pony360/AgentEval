@@ -1,0 +1,16 @@
+# yaml-language-server: $schema=../../agenteval/schemas/system.schema.json
+# Demo of a system that is NOT eligible: a different support implementation in staging.
+id: northwind-cs-staging
+name: Northwind Outfitters AI Customer Service (staging build)
+name_zh: Northwind Outfitters 电商 AI 智能客服（测试版）
+organization: Northwind Outfitters (fictional demo company)
+industry: e-commerce
+description: Experimental support assistant running in the dev namespace.
+description_zh: 运行在开发命名空间中的实验版客服助手。
+asset_id: deployment/ml-dev/mistral-test
+model: mistralai/Mistral-7B-Instruct-v0.3
+agent: demo-weak.yaml
+agent_name: demo-support-bot-weak
+exam: cs-ecommerce-v1
+rule_packs: [us-federal, us-ca, pci-dss]
+contact: genai-platform@example.com

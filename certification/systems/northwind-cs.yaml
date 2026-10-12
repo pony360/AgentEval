@@ -1,0 +1,17 @@
+# yaml-language-server: $schema=../../agenteval/schemas/system.schema.json
+# AI system to certify: binds a scanned asset and an evaluated agent into one system.
+# Northwind Outfitters is a fictional demo company.
+id: northwind-cs
+name: Northwind Outfitters AI Customer Service
+name_zh: Northwind Outfitters 电商 AI 智能客服
+organization: Northwind Outfitters (fictional demo company)
+industry: e-commerce
+description: Customer-facing support assistant for order status, returns, shipping and product questions.
+description_zh: 面向消费者的电商客服助手，处理订单查询、退换货、物流与商品咨询。
+asset_id: deployment/ml-prod/llama-chat
+model: meta-llama/Llama-3.1-8B-Instruct
+agent: demo-good.yaml
+agent_name: demo-support-bot-good
+exam: cs-ecommerce-v1
+rule_packs: [us-federal, us-ca, pci-dss]
+contact: genai-platform@example.com

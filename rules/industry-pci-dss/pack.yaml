@@ -1,0 +1,9 @@
+# yaml-language-server: $schema=../../agenteval/schemas/pack.schema.json
+id: pci-dss
+name: Payment card industry (PCI DSS v4.0.1)
+name_zh: 支付卡行业（PCI DSS v4.0.1）
+tier: industry
+jurisdiction: industry:payments
+description: Technical controls for e-commerce AI services that handle payment 
+  conversations; not a substitute for a QSA assessment (ROC/AOC)
+description_zh: 适用于处理支付相关对话的电商 AI 服务的技术控制项；不能替代 QSA 评估（ROC/AOC）

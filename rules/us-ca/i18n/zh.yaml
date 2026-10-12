@@ -1,0 +1,21 @@
+# yaml-language-server: $schema=../../../agenteval/schemas/translations.schema.json
+# Simplified Chinese translations for us-ca rules.
+# Keys must match rule IDs. `sources` translates each source's `reference` in order.
+CA-BOT-001:
+  title: 面向客户的对话式 AI 须披露其机器人身份
+  description: 在加州与消费者在线交流、用于促成销售或交易的机器人，须清晰披露其为机器人而非真人。
+  remediation: 在对话开始时明确告知用户正在与 AI 助手交流，并添加注解 agenteval.io/ai-disclosure="true"。
+  sources:
+    - Bus. & Prof. Code §17940–17943（在线机器人身份披露）
+CA-PRIV-001:
+  title: 面向客户的 AI 服务的请求日志须启用个人信息脱敏
+  description: 记录用户对话时须对个人信息进行脱敏，收集与保存应与处理目的相称。
+  remediation: 在网关或日志管道中对姓名、邮箱、电话、卡号等字段脱敏，并添加注解 agenteval.io/log-redaction="true"。
+  sources:
+    - Cal. Civ. Code §1798.100(c)（数据最小化与目的限制）
+CA-AB2013-A01:
+  title: 经训练或微调的生成式 AI 须公开训练数据说明
+  description: 对加州公众提供的生成式 AI，若由本组织训练或实质性修改，须在网站公开训练数据的高层级说明。
+  remediation: 发布训练数据说明页面（来源、规模、是否含个人信息或受版权保护内容等），并提交链接。
+  sources:
+    - Generative AI Training Data Transparency（2026-01-01 生效）

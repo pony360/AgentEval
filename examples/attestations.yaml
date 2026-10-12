@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=../agenteval/schemas/attestations.schema.json
+# Human attestations. asset_id "*" applies to all assets under the rule.
+# Prefer links to your document system or ticket numbers as evidence values; do not paste sensitive content.
+attestations:
+  - rule_id: FED-GOV-A01
+    asset_id: "*"
+    attested_by: ai-governance@example.com
+    attested_at: 2026-07-15
+    evidence:
+      ai_policy_document: https://wiki.example.internal/policies/ai-risk-management-v2
+      accountable_owner: CISO Office
+
+  - rule_id: FED-GOV-A02
+    asset_id: deployment/ml-prod/llama-chat
+    attested_by: genai-platform@example.com
+    attested_at: 2026-08-20
+    evidence:
+      impact_assessment: JIRA-AIGOV-112
+      # pre_deployment_testing missing → this item will fail

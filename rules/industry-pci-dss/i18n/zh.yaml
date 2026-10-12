@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=../../../agenteval/schemas/translations.schema.json
+# Simplified Chinese translations for pci-dss rules.
+# Keys must match rule IDs. `sources` translates each source's `reference` in order.
+PCI-REQ3-001:
+  title: 处理支付对话的 AI 服务日志不得存储完整卡号
+  description: 面向客户的 AI 服务若记录对话，日志中的主账号（PAN）须不可读（脱敏或截断）。
+  remediation: 在写入日志前识别并掩码卡号（如仅保留后四位），并添加注解 agenteval.io/log-redaction="true"。
+  sources:
+    - Requirement 3.5.1（PAN 在任何存储位置均须不可读）
+PCI-REQ4-001:
+  title: 面向公网的支付相关 AI 服务须使用强加密传输
+  description: 通过公网对外提供的面向客户 AI 服务须启用 TLS。
+  remediation: 在 Ingress 上配置受信任证书的 TLS，禁用明文 HTTP。
+  sources:
+    - Requirement 4.2.1（公网传输 PAN 时使用强加密）
+PCI-REQ8-001:
+  title: 访问支付相关 AI 服务须经过身份认证
+  description: 面向客户的 AI 服务后端接口不得匿名调用。
+  remediation: 通过 API 网关或认证代理保护推理接口，并为调用方分配独立凭证。
+  sources:
+    - Requirement 8（识别用户并认证对系统组件的访问）
+PCI-REQ10-001:
+  title: 支付相关 AI 服务须记录审计日志并持续监控
+  description: 面向客户的 AI 服务须记录请求日志并接入监控，以便发现和调查异常。
+  remediation: 启用请求日志（脱敏后）并接入集中监控与告警。
+  sources:
+    - Requirement 10.2（审计日志记录事件）

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/policy.schema.json",
+  "title": "AgentEval certification policy (certification/policy.yaml)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "min_security_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Security score must be strictly greater than this."
+    },
+    "min_quality_score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Evaluation score must be strictly greater than this."
+    },
+    "block_on_severities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low",
+          "info"
+        ]
+      }
+    },
+    "require_no_pending_attestations": {
+      "type": "boolean"
+    },
+    "require_zero_critical_eval_failures": {
+      "type": "boolean"
+    },
+    "require_no_eval_errors": {
+      "type": "boolean"
+    },
+    "require_llm_judge": {
+      "type": "boolean"
+    },
+    "allow_demo_certificates": {
+      "type": "boolean"
+    },
+    "max_evidence_age_days": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "validity_months": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 36
+    },
+    "auto_revoke": {
+      "type": "boolean"
+    },
+    "issuer_name": {
+      "type": "string"
+    },
+    "issuer_name_zh": {
+      "type": "string"
+    }
+  }
+}

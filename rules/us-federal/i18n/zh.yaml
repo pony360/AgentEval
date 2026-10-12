@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=../../../agenteval/schemas/translations.schema.json
+# Simplified Chinese translations for us-federal rules.
+# Keys must match rule IDs. `sources` translates each source's `reference` in order.
+FED-INV-001:
+  title: AI 系统须登记责任人与模型信息
+  description: 每个推理服务须标注责任团队与所服务的模型，以支持 AI 系统清单管理。
+  remediation: 为工作负载添加标签 agenteval.io/owner=<team> 与注解 agenteval.io/model=<model-name>。
+  sources:
+    - GOVERN 1.6（AI 系统清单机制）
+    - AI 使用案例清单（适用于联邦机构）
+FED-PRV-001:
+  title: 模型须有可追溯的来源并完成完整性校验
+  description: 记录模型权重来源（内部训练 / 第三方仓库）并校验哈希或签名。
+  remediation: 添加注解 agenteval.io/model-source=<来源>；在拉取权重时校验 sha256 或签名， 通过后设置 
+    agenteval.io/provenance-verified="true"（建议由 CI/准入控制器自动写入）。
+  sources:
+    - GOVERN 6.1（第三方 AI 风险策略）
+    - 模型与训练数据的完整性保护
+FED-TRN-001:
+  title: 模型须附带模型卡或等效文档
+  description: 文档应说明模型用途、能力边界、已知局限与评估结果。
+  remediation: 添加注解 agenteval.io/model-card=<文档链接>，内容覆盖预期用途、局限性与评估方法。
+  sources:
+    - MAP 功能（系统能力与局限的记录）
+FED-MON-001:
+  title: 推理服务须启用请求日志与运行监控
+  description: 部署后需持续监测，以发现滥用、性能退化与安全事件。
+  remediation: 启用网关/服务的请求日志（注意脱敏），暴露 Prometheus 指标并添加注解 
+    agenteval.io/request-logging="true"、prometheus.io/scrape="true"。
+  sources:
+    - MANAGE 4.1（部署后监测计划）
+FED-SAF-001:
+  title: 生成式模型须启用内容安全防护
+  description: 生成式模型的输入/输出应经过安全过滤或护栏（如 Llama Guard、NeMo Guardrails）。
+  remediation: 部署护栏服务或 sidecar，并添加注解 agenteval.io/content-safety=<方案名>。
+  sources:
+    - Generative AI Profile（有害内容、信息安全风险）
+FED-GOV-A01:
+  title: 组织须具备 AI 治理政策并指定责任人
+  description: 书面 AI 风险管理政策，明确角色职责与审批流程，每年复审。
+  remediation: 制定并发布 AI 治理政策，指定负责人，通过 attestations 文件提交链接与审批记录。
+  sources:
+    - GOVERN 1 / GOVERN 2（政策与问责结构）
+FED-IR-001:
+  title: 须具备 AI 安全事件响应预案
+  description: 覆盖模型滥用、数据泄露、有害输出等场景的响应与上报流程，每年演练或复审。
+  remediation: 编写 AI 事件响应预案并纳入现有安全事件流程，提交文档链接。
+  sources:
+    - MANAGE 4（风险处置与事件沟通）
+FED-GOV-A02:
+  title: 高影响 AI 须完成影响评估与部署前测试
+  description: 标记为高影响（high-impact）的 AI 服务，上线前须完成 AI 影响评估与实测验证，每年更新。
+  remediation: 完成 AI 影响评估与部署前测试报告，经审批后提交至 attestations 文件。
+  sources:
+    - 高影响 AI 的最低风险管理实践（适用于联邦机构，私营企业可参照）
+    - MAP 5.1 / MEASURE 功能
+FED-GOV-A03:
+  title: 高影响 AI 须具备人工监督与申诉机制
+  description: 对高影响决策提供人工复核、干预与申诉渠道。
+  remediation: 制定人工监督与申诉流程文档，并在服务中实现人工复核入口。
+  sources:
+    - 高影响 AI 的人工监督、干预与问责要求
+FED-SEC-001:
+  title: 推理端点必须启用身份认证
+  description: 模型推理 API 不得匿名访问，须通过 API Key、OIDC 或网关认证保护。
+  remediation: 为推理服务配置认证：vLLM 使用 --api-key 并从 Secret 注入；或在前方部署 oauth2-proxy / Envoy ext_authz / API 网关，并添加注解 
+    agenteval.io/auth=<method>。
+  sources:
+    - MEASURE 2.7（AI 系统安全性与韧性评估）
+    - AC-3 Access Enforcement
+FED-SEC-002:
+  title: 对外暴露的推理端点必须启用 TLS
+  description: 通过 LoadBalancer、NodePort 或 Ingress 对外暴露的推理服务，传输必须加密。
+  remediation: 在 Ingress 上配置 tls 段并使用受信任证书（如 cert-manager），或在服务网格中启用 mTLS。
+  sources:
+    - SC-8 Transmission Confidentiality and Integrity
+FED-SEC-003:
+  title: 推理服务须受 NetworkPolicy 限制
+  description: 推理工作负载所在命名空间应存在选中该 Pod 的 NetworkPolicy，限制横向访问。
+  remediation: 为推理 Pod 创建默认拒绝的 NetworkPolicy，仅放行网关/调用方命名空间的入站流量。
+  sources:
+    - 4.4 Orchestrator Risks（网络隔离）
+FED-SEC-004:
+  title: 容器镜像须以 digest 锁定且不使用 latest 标签
+  description: 推理镜像应使用 @sha256 摘要引用，保证部署的可追溯性与完整性。
+  remediation: 将镜像引用改为 registry/repo@sha256:<digest>，并在 CI 中签名（如 cosign）后再部署。
+  sources:
+    - SSDF for Generative AI and Dual-Use Foundation Models（软件完整性）
+FED-SEC-005:
+  title: 推理容器不得以 root 或特权模式运行
+  description: 容器须设置 runAsNonRoot，禁止 privileged 与权限提升。
+  remediation: '在 securityContext 中设置 runAsNonRoot: true、privileged: false、allowPrivilegeEscalation: false。 GPU
+    访问应通过 device plugin 实现，而非特权容器。'
+  sources:
+    - 4.1 Image / 4.5 Host OS Risks（最小权限）
+FED-SEC-006:
+  title: 不得在环境变量中明文存放密钥
+  description: 模型 API Key、HF Token、云凭证等不得以明文 value 写入 Pod 环境变量。
+  remediation: 改用 valueFrom.secretKeyRef 或外部密钥管理（Vault / CSI Secrets Store），并轮换已暴露的凭证。
+  sources:
+    - IA-5 Authenticator Management
+FED-SEC-007:
+  title: 推理容器须设置资源限制
+  description: 设置 CPU/内存/GPU limits，降低资源耗尽型攻击与失控负载的影响。
+  remediation: 为每个容器配置 resources.limits，并在命名空间上设置 ResourceQuota / LimitRange。
+  sources:
+    - MEASURE 2.7（AI 系统安全性与韧性评估）

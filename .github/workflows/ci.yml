@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - run: agenteval rules validate
+      - run: agenteval eval validate
+      - run: pytest -q
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build && python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  dco:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check Signed-off-by
+        run: |
+          missing=$(git log --format='%H %s%n%b' --no-merges origin/${{ github.base_ref }}..HEAD \
+            | awk '/^[0-9a-f]{40} /{if(c&&!s)print c; c=$1; s=0; next} /^Signed-off-by:/{s=1} END{if(c&&!s)print c}')
+          if [ -n "$missing" ]; then echo "Commits missing Signed-off-by:"; echo "$missing"; exit 1; fi
