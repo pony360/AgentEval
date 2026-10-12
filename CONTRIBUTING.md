@@ -11,7 +11,7 @@ Thanks for helping! Rules, exam papers, collectors, translations and bug fixes a
 ## Development
 
 ```bash
-git clone https://github.com/OWNER/agenteval.git && cd agenteval
+git clone https://github.com/Kecheng8/agenteval.git && cd agenteval
 python -m venv .venv && . .venv/bin/activate
 pip install -e ".[dev]"
 pytest
