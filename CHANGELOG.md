@@ -6,7 +6,7 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
-## [0.2.0] - unreleased
+## [0.2.0] - 2026-10-12
 
 ### Added
 - **A2A (Agent2Agent) evaluation adapter** (`adapter: a2a`): discovers the Agent Card, prefers a v1.0 JSON-RPC
