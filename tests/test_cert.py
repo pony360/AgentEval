@@ -37,7 +37,7 @@ def env(root=None):
 
 
 def test_rule_packs_have_three_tiers(env):
-    assert {p.tier for p in env["packs"].values()} == {"national", "regional", "industry"}
+    assert {p.tier for p in env["packs"].values()} == {"national", "regional", "industry", "baseline"}
     assert {r.pack for r in load_rules(env["root"] / "rules")} == set(env["packs"])
 
 

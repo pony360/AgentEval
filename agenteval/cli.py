@@ -79,8 +79,8 @@ CLI_MESSAGES = {
     "attest_skipped": {"en": "Evaluation did not pass; no pre-deployment testing attestation written",
                        "zh": "评测未通过，未生成部署前测试证明"},
     "snapshot_written": {"en": "Exported {n} workloads to {path}", "zh": "已导出 {n} 个工作负载到 {path}"},
-    "snapshot_required": {"en": "--snapshot is required when --source=snapshot",
-                          "zh": "source=snapshot 时必须提供 --snapshot"},
+    "snapshot_required": {"en": "Nothing to scan: pass --snapshot, --source kubernetes, --a2a-card or --mcp-config",
+                          "zh": "没有可扫描的对象：请提供 --snapshot、--source kubernetes、--a2a-card 或 --mcp-config"},
     "collect_failed": {"en": "Collection failed: {e}", "zh": "采集失败: {e}"},
     "unknown_system": {"en": "Unknown AI system: {ref} (registered: {ids})", "zh": "未登记的 AI 系统: {ref}（可用: {ids}）"},
     "bad_inputs": {"en": "Cannot read scan/eval JSON (produce them with -f json): {e}",
@@ -141,6 +141,8 @@ def scan(
     context: Optional[str] = typer.Option(None, help="kubeconfig context."),
     namespace: list[str] = typer.Option([], "--namespace", "-n", help="Limit to a namespace; repeatable."),
     in_cluster: bool = typer.Option(False, help="Use the in-cluster ServiceAccount."),
+    a2a_card: list[str] = typer.Option([], "--a2a-card", help="A2A Agent Card URL, agent base URL or JSON file; repeatable."),
+    mcp_config: list[Path] = typer.Option([], "--mcp-config", help="MCP client config (mcp.json / claude_desktop_config.json); repeatable."),
     rules: Path = typer.Option(None, help="Rules directory or file (default ./rules or $AGENTEVAL_RULES_DIR)."),
     attestations: list[Path] = typer.Option([], help="Attestation YAML; repeatable, files are merged."),
     fmt: OutFormat = typer.Option(OutFormat.json, "--format", "-f", help="Report format."),
@@ -148,19 +150,32 @@ def scan(
     lang: Lang = LANG_OPT,
     fail_on: FailOn = typer.Option(FailOn.high, help="Exit 1 if any failed check is at this severity or above."),
 ) -> None:
-    """Scan a cluster (or snapshot) and evaluate it against the rule packs."""
+    """Scan a cluster (or snapshot), A2A Agent Cards and MCP configs against the rule packs."""
+    from agenteval.collectors.a2a import collect_a2a_cards
+    from agenteval.collectors.mcp import collect_mcp_configs
+
     rule_set = _load_rules_or_exit(rules or default_rules_dir())
     try:
         atts = load_attestations(list(attestations))
+        labels: list[str] = []
+        assets = []
         if source == SourceKind.snapshot:
-            if not snapshot:
+            if snapshot:
+                assets, _ = collect_from_snapshot_file(snapshot)
+                labels.append(f"snapshot:{snapshot.name}")
+            elif not (a2a_card or mcp_config):
                 _err(_m("snapshot_required", lang.value))
                 raise typer.Exit(2)
-            assets, _ = collect_from_snapshot_file(snapshot)
-            source_label = f"snapshot:{snapshot.name}"
         else:
             assets, _ = collect_from_kubernetes(context=context, namespaces=namespace or None, in_cluster=in_cluster)
-            source_label = f"kubernetes:{context or ('in-cluster' if in_cluster else 'current-context')}"
+            labels.append(f"kubernetes:{context or ('in-cluster' if in_cluster else 'current-context')}")
+        if a2a_card:
+            assets += collect_a2a_cards(list(a2a_card))
+            labels.append(f"a2a:{len(a2a_card)}")
+        if mcp_config:
+            assets += collect_mcp_configs(list(mcp_config))
+            labels.append("mcp:" + ",".join(p.name for p in mcp_config))
+        source_label = " + ".join(labels)
     except typer.Exit:
         raise
     except Exception as e:
@@ -527,6 +542,61 @@ def cert_keygen(
         public_out.parent.mkdir(parents=True, exist_ok=True)
         public_out.write_text(public_pem(key), encoding="utf-8")
     typer.echo(public_pem(key) + f"key_id: {key_id(key)}")
+
+
+# ======================= Agent protocols (A2A / MCP) =======================
+
+a2a_app = typer.Typer(help="Agent2Agent (A2A) protocol helpers.", no_args_is_help=True)
+mcp_app = typer.Typer(help="Model Context Protocol (MCP): run AgentEval as an MCP server.", no_args_is_help=True)
+app.add_typer(a2a_app, name="a2a")
+app.add_typer(mcp_app, name="mcp")
+
+
+@a2a_app.command("card")
+def a2a_card_cmd(
+    target: str = typer.Argument(..., help="Agent Card file, card URL, or agent base URL."),
+    rules: Path = typer.Option(None, help="Rules directory (default ./rules or $AGENTEVAL_RULES_DIR)."),
+    lang: Lang = LANG_OPT,
+) -> None:
+    """Fetch and check an A2A Agent Card: endpoints, protocol versions, auth and signing. Exit 1 on high findings."""
+    from agenteval.collectors.a2a import CardError, fetch_card, normalize_card
+    from agenteval.i18n import localize_result
+
+    try:
+        asset = normalize_card(*fetch_card(target))
+    except CardError as e:
+        _err(str(e))
+        raise typer.Exit(2)
+    rule_set = [r for r in _load_rules_or_exit(rules or default_rules_dir()) if "a2a_agent" in r.applies_to.asset_types]
+    result = run_scan(rule_set, [asset], source=f"a2a:{target}")
+    f = asset.facts
+    typer.echo(f"{asset.name}  ({asset.id})")
+    typer.echo(f"  protocol: {', '.join(f['protocol_versions']) or '-'}  bindings: {', '.join(f['bindings']) or '-'}")
+    typer.echo(f"  endpoints: {', '.join(f['endpoint']['urls']) or '-'}")
+    typer.echo(f"  auth: {', '.join(f['auth']['schemes']) or 'none'} (required: {f['auth']['required']})  "
+               f"signed: {f['card']['signed']}  skills: {f['skills']['count']}")
+    localized = localize_result(result, lang.value)
+    worst = 0
+    for x in localized.findings:
+        if x.status == Status.not_applicable:
+            continue
+        mark = "✓" if x.status == Status.passed else "✕"
+        typer.secho(f"  {mark} {x.rule_id:<14} {x.severity.value:<8} {x.rule_title}",
+                    fg="green" if x.status == Status.passed else "red")
+        if x.status == Status.failed:
+            worst = max(worst, x.severity.rank)
+    raise typer.Exit(1 if worst >= Severity.high.rank else 0)
+
+
+@mcp_app.command("serve")
+def mcp_serve_cmd(
+    root: Path = typer.Option(Path("."), help="Only files under this directory can be read by tools."),
+    allow_network: bool = typer.Option(False, help="Allow tools that fetch remote Agent Cards or call remote agents."),
+) -> None:
+    """Run AgentEval as an MCP server over stdio (for Claude, IDEs and other MCP clients)."""
+    from agenteval.mcp_server import serve
+
+    serve(root, allow_network)
 
 
 if __name__ == "__main__":  # pragma: no cover

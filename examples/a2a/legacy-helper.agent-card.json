@@ -1,0 +1,15 @@
+{
+  "name": "Legacy Helper Agent",
+  "description": "Deliberately insecure v0.3 example used in tests and docs.",
+  "url": "http://helper.example.com/a2a?api_key=EXAMPLE_ONLY",
+  "preferredTransport": "JSONRPC",
+  "protocolVersion": "0.3.0",
+  "version": "0.9.1",
+  "capabilities": {"streaming": false, "pushNotifications": true},
+  "securitySchemes": {
+    "key": {"type": "apiKey", "in": "query", "name": "api_key"},
+    "legacy_oauth": {"type": "oauth2", "flows": {"implicit": {"authorizationUrl": "https://helper.example.com/authorize", "scopes": {}}}}
+  },
+  "security": [],
+  "skills": [{"id": "faq", "name": "FAQ", "description": "Answer questions.", "tags": []}]
+}

@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=../../agenteval/schemas/rule.schema.json
+# A2A (Agent2Agent) Agent Card checks. Facts come from `agenteval scan --a2a-card <url|file>`.
+rules:
+  - id: PROTO-A2A-001
+    title: A2A endpoints must use HTTPS
+    description: Every interface URL an Agent Card advertises must use TLS, so messages, tasks and credentials are encrypted in transit.
+    severity: high
+    type: automated
+    category: data-protection
+    applies_to:
+      asset_types: [a2a_agent]
+    check: {field: endpoint.all_https, op: eq, value: true}
+    remediation: Serve every A2A interface over HTTPS with a trusted certificate and update the Agent Card URLs.
+    sources:
+      - framework: A2A Protocol Specification
+        reference: Enterprise features — transport security (TLS)
+        url: https://a2a-protocol.org/latest/specification/
+      - framework: NIST SP 800-53 Rev.5
+        reference: SC-8 Transmission Confidentiality and Integrity
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: PROTO-A2A-002
+    title: A2A agents must declare and require authentication
+    description: The Agent Card must declare security schemes and require them, so that only authenticated clients and agents can send tasks.
+    severity: high
+    type: automated
+    category: access-control
+    applies_to:
+      asset_types: [a2a_agent]
+    check: {field: auth.required, op: eq, value: true}
+    remediation: Add securitySchemes (OAuth 2.0, OpenID Connect, mutual TLS or an API key header) and a matching security requirement to the Agent Card, and enforce it on the server.
+    sources:
+      - framework: A2A Protocol Specification
+        reference: Authentication and authorization (securitySchemes, security requirements)
+        url: https://a2a-protocol.org/latest/specification/
+      - framework: NIST SP 800-53 Rev.5
+        reference: IA-9 Service Identification and Authentication
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: PROTO-A2A-003
+    title: A2A credentials must not travel in URLs
+    description: API keys or tokens in query strings leak into logs, proxies and browser history.
+    severity: medium
+    type: automated
+    category: access-control
+    applies_to:
+      asset_types: [a2a_agent]
+    check:
+      all:
+        - {field: auth.api_key_in_query, op: eq, value: false}
+        - {field: endpoint.secrets_in_url, op: eq, value: false}
+    remediation: Send API keys in a header (for example X-API-Key) or use OAuth bearer tokens; remove credentials from advertised URLs.
+    sources:
+      - framework: NIST SP 800-53 Rev.5
+        reference: IA-5(7) No Embedded Unencrypted Static Authenticators
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: PROTO-A2A-004
+    title: A2A OAuth flows must not use implicit or password grants
+    description: The implicit and resource-owner password grants are deprecated by the OAuth 2.0 Security BCP and were removed in A2A v1.0.
+    severity: medium
+    type: automated
+    category: access-control
+    applies_to:
+      asset_types: [a2a_agent]
+    check: {field: oauth.deprecated_flows, op: eq, value: false}
+    remediation: Use the authorization code flow with PKCE, client credentials, or the device code flow.
+    sources:
+      - framework: IETF RFC 9700
+        reference: Best Current Practice for OAuth 2.0 Security, §2.1.2 and §2.4
+        url: https://www.rfc-editor.org/rfc/rfc9700
+      - framework: A2A Protocol v1.0
+        reference: What's new in v1.0 — OAuth implicit and password flows removed
+        url: https://a2a-protocol.org/latest/whats-new-v1/
+
+  - id: PROTO-A2A-005
+    title: A2A Agent Cards should be signed
+    description: A signed card (JWS over the JCS-canonical card) lets clients detect a tampered or spoofed card before trusting its endpoints and skills.
+    severity: low
+    type: automated
+    category: integrity
+    applies_to:
+      asset_types: [a2a_agent]
+    check: {field: card.signed, op: eq, value: true}
+    remediation: Sign the Agent Card and publish the signatures field; have clients verify it against a trusted key.
+    sources:
+      - framework: A2A Protocol v1.0
+        reference: Agent Card signatures (RFC 7515 JWS, RFC 8785 JCS)
+        url: https://a2a-protocol.org/latest/whats-new-v1/
+
+  - id: PROTO-A2A-006
+    title: A2A agents must identify their provider
+    description: The provider organization tells callers who operates the agent and who is accountable for it.
+    severity: low
+    type: automated
+    category: governance
+    applies_to:
+      asset_types: [a2a_agent]
+    check: {field: provider.organization, op: not_empty}
+    remediation: Fill in provider.organization and provider.url in the Agent Card.
+    sources:
+      - framework: NIST AI RMF 1.0
+        reference: GOVERN 6.1 (third-party AI accountability)
+        url: https://www.nist.gov/itl/ai-risk-management-framework

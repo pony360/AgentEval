@@ -39,6 +39,7 @@ rules/
     i18n/zh.yaml         # Simplified Chinese display text
   us-ca/                 # regional tier
   industry-pci-dss/      # industry tier
+  agent-protocols/       # baseline tier: A2A Agent Cards and MCP configs
 ```
 
 The loader walks the directory recursively. It skips `pack.yaml` and anything under `i18n/`,
@@ -51,13 +52,14 @@ above it. Rule IDs must be unique across all packs.
 id: us-ca                 # referenced by certification/systems/*.yaml → rule_packs
 name: California
 name_zh: 加利福尼亚州        # optional
-tier: regional            # national | regional | industry
+tier: regional            # national | regional | industry | baseline
 jurisdiction: US-CA
 description: SB 1001 bot disclosure, CCPA/CPRA data minimization, AB 2013 training-data transparency.
 description_zh: ...       # optional
 ```
 
-Certification uses the tier to show national, regional and industry results separately.
+Certification uses the tier to show national, regional, industry and baseline (jurisdiction-neutral, e.g.
+the `agent-protocols` pack) results separately.
 
 ## Rule fields
 
@@ -69,7 +71,7 @@ Certification uses the tier to show national, regional and industry results sepa
 | `severity` | yes | enum | `critical` · `high` · `medium` · `low` · `info` |
 | `type` | yes | enum | `automated` (needs `check`) or `attestation` (needs `attestation`) |
 | `category` | yes | string | Free-form, e.g. `access-control`, `governance` |
-| `applies_to.asset_types` | yes | string[] | `inference_service`, `cluster` |
+| `applies_to.asset_types` | yes | string[] | `inference_service`, `cluster`, `a2a_agent`, `mcp_server` |
 | `applies_to.when` | no | condition | If false, the rule is `not_applicable` for that asset |
 | `check` | automated | condition | Must be true for the asset to **pass** |
 | `attestation.evidence_required` | attestation | string[] | Evidence keys that must all be present and non-empty |
@@ -161,6 +163,43 @@ KServe), or the label `agenteval.io/inference: "true"`.
 |---|---|
 | `inference_service_count` | int |
 | `namespaces` | str[] (namespaces that contain inference services) |
+
+### `a2a_agent` (A2A Agent Cards)
+
+Collected by `agenteval scan --a2a-card <url|file>`. Both v0.3 and v1.0 card shapes are read; see [a2a.md](a2a.md).
+
+| Fact | Type | Derived from |
+|---|---|---|
+| `name`, `version` | str | the card |
+| `protocol_versions`, `bindings` | str[] | `supportedInterfaces[]` (v1.0), `protocolVersion` / `preferredTransport` / `additionalInterfaces` (v0.3) |
+| `endpoint.urls` | str[] | every advertised interface URL |
+| `endpoint.all_https`, `endpoint.any_plain_http` | bool | URL schemes (localhost counts as secure) |
+| `endpoint.secrets_in_url` | bool | `key`, `api_key`, `token`… query parameters in a URL |
+| `auth.schemes` | str[] | `securitySchemes` types: apiKey, http, oauth2, openIdConnect, mutualTLS |
+| `auth.declared`, `auth.required` | bool | schemes present; `security` / `securityRequirements` non-empty (schemes alone count when no requirement list exists) |
+| `auth.api_key_in_query`, `auth.mutual_tls` | bool | apiKey scheme `in: query`; a mutualTLS scheme |
+| `oauth.flows`, `oauth.deprecated_flows` | str[], bool | OAuth flow names; implicit or password present |
+| `card.signed` | bool | `signatures` present (not verified) |
+| `capabilities.streaming`, `.push_notifications`, `.extended_card` | bool | `capabilities` |
+| `provider.organization`, `provider.url` | str | `provider` |
+| `skills.count`, `skills.ids` | int, str[] | `skills` |
+
+### `mcp_server` (MCP client configurations)
+
+Collected by `agenteval scan --mcp-config <file>` from `mcpServers` or `servers` objects; see [mcp.md](mcp.md).
+
+| Fact | Type | Derived from |
+|---|---|---|
+| `transport` | str | `stdio`, `http` or `sse` (`type` / `url`) |
+| `remote`, `localhost`, `url` | bool, bool, str | the server URL |
+| `tls.enabled` | bool | `https://`, or a localhost URL |
+| `auth.header_present`, `auth.oauth_declared`, `auth.declared` | bool | Authorization / X-API-Key headers; an `oauth` block or `"auth": "oauth"` |
+| `secrets.plaintext` | str[] | **names** (`env:NAME`, `header:NAME`) of secret-looking entries holding literal values |
+| `env.names` | str[] | environment variable names |
+| `command.runner` | str | npx, uvx, pipx, docker, node, python, deno, shell, other |
+| `command.download_exec`, `command.shell` | bool | `curl … \| sh`-style launch; launched through a shell |
+| `package.name`, `package.pinned`, `package.fetches_remote_code` | str, bool, bool | the package or image argument and whether it carries an exact version, tag or digest |
+| `docker.privileged`, `docker.host_network`, `docker.host_root_mount` | bool | docker run flags |
 
 The `agenteval.io/` prefix can be changed with `AGENTEVAL_ANNOTATION_PREFIX`. Point it at a
 domain your organization controls, for example `ai.example.com/`.

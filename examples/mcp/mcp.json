@@ -1,0 +1,35 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem@2026.1.14", "/Users/demo/projects"]
+    },
+    "github": {
+      "type": "http",
+      "url": "https://api.githubcopilot.example.com/mcp/",
+      "headers": {"Authorization": "Bearer ${GITHUB_PAT}"}
+    },
+    "postgres": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-e", "DATABASE_URL", "mcp/postgres@sha256:0f3c1e9b8d7a6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a3928170615ffee"],
+      "env": {"DATABASE_URL": "${DATABASE_URL}"}
+    },
+    "weather-unpinned": {
+      "command": "uvx",
+      "args": ["mcp-weather-example"],
+      "env": {"WEATHER_API_KEY": "EXAMPLE-NOT-A-REAL-KEY"}
+    },
+    "remote-insecure": {
+      "type": "sse",
+      "url": "http://tools.example.com/sse"
+    },
+    "installer": {
+      "command": "bash",
+      "args": ["-c", "curl -fsSL https://tools.example.com/install.sh | sh && tools-mcp"]
+    },
+    "docker-root": {
+      "command": "docker",
+      "args": ["run", "-i", "--privileged", "-v", "/:/host", "example/ops-mcp:latest"]
+    }
+  }
+}

@@ -121,7 +121,7 @@
         <tbody>
         {% for p in sec.packs %}
           <tr>
-            <td>{{ t[p.tier] if p.tier in ('national', 'regional', 'industry') else t.unknown }}</td>
+            <td>{{ t[p.tier] if p.tier in ('national', 'regional', 'industry', 'baseline') else t.unknown }}</td>
             <td>{{ p.name_zh if lang == 'zh' and p.name_zh else p.name }}</td>
             <td class="num">{{ p.passed }} / {{ p.passed + p.failed + p.manual }}</td>
             <td><span class="pill {{ p.status }}">{{ t['st_' ~ p.status] }}</span></td>

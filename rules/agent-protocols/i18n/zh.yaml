@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=../../../agenteval/schemas/translations.schema.json
+# Simplified Chinese translations for agent-protocols rules.
+# Keys must match rule IDs. `sources` translates each source's `reference` in order.
+PROTO-A2A-001:
+  title: A2A 端点必须使用 HTTPS
+  description: Agent Card 声明的每个接口地址都必须启用 TLS，确保消息、任务与凭证在传输中加密。
+  remediation: 所有 A2A 接口通过受信任证书的 HTTPS 提供，并更新 Agent Card 中的 URL。
+  sources: [企业特性——传输安全（TLS）, SC-8 传输保密性与完整性]
+PROTO-A2A-002:
+  title: A2A Agent 必须声明并要求身份认证
+  description: Agent Card 必须声明安全方案并将其设为必需，只有经过认证的客户端或 Agent 才能发送任务。
+  remediation: 在 Agent Card 中添加 securitySchemes（OAuth 2.0、OpenID Connect、双向 TLS 或请求头 API Key）及对应的安全要求，并在服务端强制执行。
+  sources: [身份认证与授权（securitySchemes、安全要求）, IA-9 服务标识与认证]
+PROTO-A2A-003:
+  title: A2A 凭证不得出现在 URL 中
+  description: 查询字符串中的 API Key 或令牌会泄露到日志、代理和浏览器历史中。
+  remediation: 通过请求头（如 X-API-Key）发送 API Key 或使用 OAuth Bearer 令牌，并从公布的 URL 中移除凭证。
+  sources: [IA-5(7) 不得嵌入未加密的静态认证凭据]
+PROTO-A2A-004:
+  title: A2A 的 OAuth 不得使用隐式或密码授权模式
+  description: 隐式授权与资源所有者密码授权已被 OAuth 2.0 安全最佳实践弃用，并在 A2A v1.0 中移除。
+  remediation: 使用带 PKCE 的授权码模式、客户端凭证模式或设备码模式。
+  sources: [OAuth 2.0 安全最佳实践 §2.1.2 与 §2.4, v1.0 新变化——移除 OAuth 隐式与密码模式]
+PROTO-A2A-005:
+  title: A2A Agent Card 应当签名
+  description: 签名的 Agent Card（对 JCS 规范化后的卡片做 JWS 签名）能让客户端在信任其端点与技能前发现篡改或伪造。
+  remediation: 对 Agent Card 签名并发布 signatures 字段，客户端使用受信任的公钥进行校验。
+  sources: [Agent Card 签名（RFC 7515 JWS、RFC 8785 JCS）]
+PROTO-A2A-006:
+  title: A2A Agent 必须标明提供方
+  description: 提供方组织告诉调用方由谁运营该 Agent、由谁负责。
+  remediation: 在 Agent Card 中填写 provider.organization 与 provider.url。
+  sources: [GOVERN 6.1（第三方 AI 问责）]
+PROTO-MCP-001:
+  title: 远程 MCP 服务器必须使用 TLS
+  description: 远程（HTTP 或 SSE）MCP 服务器承载提示词、工具参数与结果，明文 HTTP 会在传输中暴露这些内容。
+  remediation: 服务器地址使用 https://（本机 localhost 除外）。
+  sources: [传输——Streamable HTTP 安全警告, SC-8 传输保密性与完整性]
+PROTO-MCP-002:
+  title: 远程 MCP 服务器应当声明身份认证
+  description: 非本机的 MCP 服务器如果既没有 Authorization 请求头也没有 OAuth 配置，很可能无需认证即可访问。
+  remediation: 使用 MCP 的 OAuth 授权流程（在客户端配置 "oauth" 段），或使用引用环境变量的 Authorization 请求头。
+  sources: [授权（HTTP 传输使用 OAuth 2.1）]
+PROTO-MCP-003:
+  title: MCP 配置中不得包含明文密钥
+  description: 直接写进 env 或 headers 的令牌、API Key 与密码会进入配置文件、备份和代码仓库。
+  remediation: 用引用代替明文，例如 "${GITHUB_TOKEN}" 或 "${input:token}"，并从密钥管理系统或系统钥匙串加载；已提交过的密钥须轮换。
+  sources: [IA-5(7) 不得嵌入未加密的静态认证凭据, 安全最佳实践]
+PROTO-MCP-004:
+  title: MCP 服务器的软件包与镜像必须固定版本
+  description: 通过 npx、uvx、pipx 或 docker 启动的服务器会在启动时下载代码；未固定版本的包或 :latest 镜像会悄悄运行最新发布的内容。
+  remediation: 固定精确版本（npx pkg@1.2.3、uvx pkg==1.2.3）或镜像摘要（image@sha256:...），并审查升级。
+  sources: [PS.3 / PW.4——保护并验证第三方组件, SR-3 供应链控制与流程]
+PROTO-MCP-005:
+  title: MCP 服务器启动时不得下载并执行脚本
+  description: 把 curl 或 wget 管道给 shell 的启动命令，会在每次客户端启动时以用户权限运行未经审查的远程代码。
+  remediation: 安装经过审查、固定版本的发行版，并直接启动二进制或软件包。
+  sources: [CM-7(5) 授权软件——默认拒绝、例外允许]
+PROTO-MCP-006:
+  title: 容器化 MCP 服务器不得以特权运行或挂载宿主机根目录
+  description: 特权容器、宿主机网络或挂载 / 会让 MCP 服务器（以及任何被提示词注入的工具调用）控制宿主机。
+  remediation: 去掉 --privileged 与 --network host，只挂载服务器需要的目录，尽量只读。
+  sources: [§4.4 容器风险——特权容器与宿主机挂载]
