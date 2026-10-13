@@ -1,10 +1,10 @@
 # AgentEval
 
-**扫描 · 评测 · 认证。** AgentEval 是一个 Apache-2.0 开源命令行工具：按策略即代码（policy-as-code）规则包**扫描**自托管 AI 基础设施，用标准试卷**评测** AI Agent，两项都通过时**签发数字签名证书**。
+**扫描 · 评测 · 认证。** AgentEval 是一个 Apache-2.0 开源命令行工具：按策略即代码（policy-as-code）规则包**扫描**自托管 AI 基础设施、A2A Agent Card 与 MCP 配置，用标准试卷**评测** AI Agent，两项都通过时**签发数字签名证书**。
 
 [English](https://github.com/pony360/AgentEval/blob/main/README.md) · [简体中文](https://github.com/pony360/AgentEval/blob/main/README.zh-CN.md)
 
-> **状态：Alpha（0.1.0）。** 内置规则包为入门级映射，全部标记为 `verified: false`，供贵司法务/合规团队审核的起点，不构成法律意见。
+> **状态：Alpha（0.2.0）。** 内置规则包为入门级映射，全部标记为 `verified: false`，供贵司法务/合规团队审核的起点，不构成法律意见。
 
 ## 目录
 
@@ -29,7 +29,9 @@
 | **分层规则包** | 国家（美国联邦指引）、区域（加州）、行业（PCI DSS）入门规则包 |
 | **报告** | JSON、SARIF（GitHub 代码扫描）、HTML；中英文输出 |
 | **Agent 评测** | 脚本化多轮对话 + 工具模拟；确定性断言 + 评分细则（rubric）裁判；关键项一票否决 |
-| **可插拔** | OpenAI 兼容接口、通用 Webhook、演示 Agent；离线启发式 / Anthropic / OpenAI 兼容裁判 |
+| **可插拔** | OpenAI 兼容接口、A2A Agent（v0.3 与 v1.0）、通用 Webhook、演示 Agent；离线启发式 / Anthropic / OpenAI 兼容裁判 |
+| **智能体协议** | 检查 A2A Agent Card（TLS、认证、OAuth 模式、签名）与 MCP 客户端配置（明文密钥、未固定版本、下载即执行、特权容器） |
+| **MCP 服务器** | `agenteval mcp serve` 把扫描、评测与证书校验作为 MCP 工具提供；文件访问限定在根目录，默认不联网 |
 | **认证** | 严格门槛、Ed25519 签名 JSON、HTML/PDF 证书、可选二维码验证地址与吊销状态查询 |
 | **适合 CI** | 稳定退出码；无需数据库或服务端 |
 
@@ -84,6 +86,7 @@ agenteval cert verify certificates/AEV-*.json --public-key issuer.pem --lang zh
 | `us-federal` | 国家 | 16 | NIST AI RMF 1.0、AI 600-1、SP 800-53、SP 800-190、SP 800-218A、OMB M-25-21 |
 | `us-ca` | 区域 | 3 | 机器人身份披露（B&P §17940）、CCPA 数据最小化、AB 2013 训练数据透明度 |
 | `pci-dss` | 行业 | 4 | PCI DSS v4.0.1（要求 3、4、8、10） |
+| `agent-protocols` | 基线 | 12 | A2A Agent Card 与 MCP 客户端配置：TLS、认证、OAuth 模式、卡片签名、明文密钥、版本固定、下载即执行、容器隔离 |
 
 规则以英文为源语言，简体中文译文位于 `rules/*/i18n/zh.yaml`。
 
@@ -95,6 +98,15 @@ agenteval cert verify certificates/AEV-*.json --public-key issuer.pem --lang zh
 
 - 试卷格式、评分与适配器：[docs/exams.md](https://github.com/pony360/AgentEval/blob/main/docs/exams.md)
 - 认证门槛、密钥、验证与吊销：[docs/certification.md](https://github.com/pony360/AgentEval/blob/main/docs/certification.md)
+- A2A 评测适配器与 Agent Card 检查：[docs/a2a.md](https://github.com/pony360/AgentEval/blob/main/docs/a2a.md)
+- MCP 服务器与 MCP 配置扫描：[docs/mcp.md](https://github.com/pony360/AgentEval/blob/main/docs/mcp.md)
+
+```bash
+agenteval eval run -p cs-ecommerce-v1 -a examples/agents/a2a.example.yaml   # 评测 A2A Agent
+agenteval a2a card https://agents.example.com                               # 检查 Agent Card
+agenteval scan --mcp-config ~/.cursor/mcp.json --lang zh                    # 扫描 MCP 配置
+agenteval mcp serve --root .                                                # 作为 MCP 服务器运行
+```
 
 颁证条件：安全得分 **> 90** 且质量得分 **> 90**；无未修复的高危/严重项；无待证明项；评测无关键项失败与会话错误；证据不超过 30 天。离线启发式裁判只能获得 **DEMO** 证书。证书有效期 6 个月。
 

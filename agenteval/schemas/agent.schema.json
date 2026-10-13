@@ -1,0 +1,358 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://agenteval.dev/schemas/v1/agent.schema.json",
+  "title": "AgentEval agent-under-test configuration",
+  "$defs": {
+    "A2AConfig": {
+      "properties": {
+        "agent_card_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Agent Card Url"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "protocol_version": {
+          "default": "auto",
+          "enum": [
+            "auto",
+            "0.3",
+            "1.0"
+          ],
+          "title": "Protocol Version",
+          "type": "string"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Headers",
+          "type": "object"
+        },
+        "timeout_s": {
+          "default": 60.0,
+          "title": "Timeout S",
+          "type": "number"
+        },
+        "poll_interval_s": {
+          "default": 1.0,
+          "title": "Poll Interval S",
+          "type": "number"
+        },
+        "send_context": {
+          "default": false,
+          "title": "Send Context",
+          "type": "boolean"
+        },
+        "tool_calls_key": {
+          "default": "tool_calls",
+          "title": "Tool Calls Key",
+          "type": "string"
+        }
+      },
+      "title": "A2AConfig",
+      "type": "object"
+    },
+    "DemoConfig": {
+      "properties": {
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/DemoRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "default": {
+          "type": "string",
+          "default": "Sorry, I can't help with that.",
+          "title": "Default"
+        },
+        "latency_ms": {
+          "default": 300.0,
+          "title": "Latency Ms",
+          "type": "number"
+        }
+      },
+      "required": [
+        "rules"
+      ],
+      "title": "DemoConfig",
+      "type": "object"
+    },
+    "DemoRule": {
+      "properties": {
+        "match": {
+          "title": "Match",
+          "type": "string"
+        },
+        "reply": {
+          "title": "Reply",
+          "type": "string"
+        },
+        "tool_calls": {
+          "items": {
+            "$ref": "#/$defs/ToolCall"
+          },
+          "title": "Tool Calls",
+          "type": "array"
+        }
+      },
+      "required": [
+        "match",
+        "reply"
+      ],
+      "title": "DemoRule",
+      "type": "object"
+    },
+    "OpenAIConfig": {
+      "properties": {
+        "base_url": {
+          "title": "Base Url",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "api_key_env": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Api Key Env"
+        },
+        "system_prompt": {
+          "default": "",
+          "title": "System Prompt",
+          "type": "string"
+        },
+        "inject_paper_context": {
+          "default": true,
+          "title": "Inject Paper Context",
+          "type": "boolean"
+        },
+        "send_tools": {
+          "default": true,
+          "title": "Send Tools",
+          "type": "boolean"
+        },
+        "temperature": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": 0.0,
+          "title": "Temperature"
+        },
+        "timeout_s": {
+          "default": 60.0,
+          "title": "Timeout S",
+          "type": "number"
+        },
+        "max_tool_rounds": {
+          "default": 3,
+          "title": "Max Tool Rounds",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "base_url",
+        "model"
+      ],
+      "title": "OpenAIConfig",
+      "type": "object"
+    },
+    "ToolCall": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "arguments": {
+          "additionalProperties": true,
+          "title": "Arguments",
+          "type": "object"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "ToolCall",
+      "type": "object"
+    },
+    "WebhookConfig": {
+      "properties": {
+        "url": {
+          "title": "Url",
+          "type": "string"
+        },
+        "method": {
+          "default": "POST",
+          "enum": [
+            "POST",
+            "PUT"
+          ],
+          "title": "Method",
+          "type": "string"
+        },
+        "headers": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Headers",
+          "type": "object"
+        },
+        "body": {
+          "title": "Body"
+        },
+        "response": {
+          "$ref": "#/$defs/WebhookResponseMap"
+        },
+        "timeout_s": {
+          "default": 60.0,
+          "title": "Timeout S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "url",
+        "response"
+      ],
+      "title": "WebhookConfig",
+      "type": "object"
+    },
+    "WebhookResponseMap": {
+      "properties": {
+        "text_path": {
+          "title": "Text Path",
+          "type": "string"
+        },
+        "tool_calls_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tool Calls Path"
+        },
+        "session_id_path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Session Id Path"
+        }
+      },
+      "required": [
+        "text_path"
+      ],
+      "title": "WebhookResponseMap",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+    },
+    "adapter": {
+      "enum": [
+        "openai",
+        "webhook",
+        "a2a",
+        "demo"
+      ],
+      "title": "Adapter",
+      "type": "string"
+    },
+    "openai": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OpenAIConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "webhook": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/WebhookConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "a2a": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/A2AConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "demo": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DemoConfig"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "name",
+    "adapter"
+  ],
+  "type": "object"
+}

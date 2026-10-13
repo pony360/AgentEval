@@ -1,0 +1,8 @@
+# yaml-language-server: $schema=../../agenteval/schemas/pack.schema.json
+id: agent-protocols
+name: Agent protocols (A2A and MCP)
+name_zh: 智能体协议（A2A 与 MCP）
+tier: baseline
+jurisdiction: global
+description: Jurisdiction-neutral controls for A2A Agent Cards and MCP server configurations (starter pack, pending review)
+description_zh: 面向 A2A Agent Card 与 MCP 服务器配置的通用技术控制（入门规则包，待审核）

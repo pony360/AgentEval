@@ -23,6 +23,8 @@ def _files():
         yield f, "system"
     for f in ROOT.glob("examples/attestations*.yaml"):
         yield f, "attestations"
+    for f in ROOT.glob("examples/agents/*.yaml"):
+        yield f, "agent"
 
 
 @pytest.mark.parametrize("name", SCHEMA_NAMES)

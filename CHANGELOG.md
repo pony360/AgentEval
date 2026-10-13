@@ -6,6 +6,25 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [0.2.0] - unreleased
+
+### Added
+- **A2A (Agent2Agent) evaluation adapter** (`adapter: a2a`): discovers the Agent Card, prefers a v1.0 JSON-RPC
+  interface and falls back to v0.3; one A2A conversation per exam case (`contextId`), `taskId` continuation for
+  `input-required` / `auth-required` tasks, `GetTask` polling for long-running tasks, tool calls read from
+  `metadata.tool_calls` or DataParts. Verified against the official `a2a-sdk` 1.2 server (v1.0 and v0.3 compat).
+- **A2A Agent Card scanning**: `agenteval a2a card` and `agenteval scan --a2a-card` (new `a2a_agent` asset type).
+- **MCP client-config scanning**: `agenteval scan --mcp-config` for `mcpServers` / `servers` JSON (new `mcp_server` asset type).
+- **`agent-protocols` rule pack** (new `baseline` tier): 6 A2A and 6 MCP rules, with Chinese translations.
+- **`agenteval mcp serve`**: dependency-free MCP stdio server with 8 tools (scan, inspect_a2a_card, run_eval,
+  check_certification, verify_certificate, …), confined to `--root`, network-gated by `--allow-network`.
+  Verified with the official MCP Python SDK 2.3 client.
+- `agent.schema.json` for agent-under-test configs; editor modelines on the example agents.
+
+### Changed
+- `scan` no longer requires `--snapshot` when `--a2a-card` or `--mcp-config` is given.
+- Adapter error messages default to English.
+
 ## [0.1.0] - 2026-10-11
 
 ### Added

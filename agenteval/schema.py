@@ -16,7 +16,7 @@ from typing import Any
 
 from jsonschema import Draft202012Validator
 
-SCHEMA_NAMES = ("rule", "pack", "translations", "attestations", "exam", "system", "policy")
+SCHEMA_NAMES = ("rule", "pack", "translations", "attestations", "exam", "system", "policy", "agent")
 
 
 @lru_cache(maxsize=None)

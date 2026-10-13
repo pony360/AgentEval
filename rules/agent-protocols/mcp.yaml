@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=../../agenteval/schemas/rule.schema.json
+# MCP (Model Context Protocol) client-configuration checks. Facts come from `agenteval scan --mcp-config <file>`.
+rules:
+  - id: PROTO-MCP-001
+    title: Remote MCP servers must use TLS
+    description: Remote (HTTP or SSE) MCP servers carry prompts, tool arguments and results; plain HTTP exposes them in transit.
+    severity: high
+    type: automated
+    category: data-protection
+    applies_to:
+      asset_types: [mcp_server]
+      when: {field: remote, op: eq, value: true}
+    check: {field: tls.enabled, op: eq, value: true}
+    remediation: Use an https:// URL for the server (localhost is exempt).
+    sources:
+      - framework: MCP Specification
+        reference: Transports — Streamable HTTP security warning
+        url: https://modelcontextprotocol.io/specification/
+      - framework: NIST SP 800-53 Rev.5
+        reference: SC-8 Transmission Confidentiality and Integrity
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: PROTO-MCP-002
+    title: Remote MCP servers should declare authentication
+    description: A non-local MCP server without an authorization header or OAuth configuration is likely reachable without authentication.
+    severity: medium
+    type: automated
+    category: access-control
+    applies_to:
+      asset_types: [mcp_server]
+      when:
+        all:
+          - {field: remote, op: eq, value: true}
+          - {field: localhost, op: eq, value: false}
+    check: {field: auth.declared, op: eq, value: true}
+    remediation: Use the MCP OAuth authorization flow (add an "oauth" block for the client) or an Authorization header that references an environment variable.
+    sources:
+      - framework: MCP Specification
+        reference: Authorization (OAuth 2.1 for HTTP transports)
+        url: https://modelcontextprotocol.io/specification/
+
+  - id: PROTO-MCP-003
+    title: MCP configurations must not contain plaintext secrets
+    description: Tokens, API keys and passwords written directly into env or headers end up in dotfiles, backups and repositories.
+    severity: critical
+    type: automated
+    category: secrets
+    applies_to:
+      asset_types: [mcp_server]
+    check: {field: secrets.plaintext, op: empty}
+    remediation: Reference secrets instead of embedding them, e.g. "${GITHUB_TOKEN}" or "${input:token}", and load them from a secret manager or the OS keychain. Rotate any secret that was committed.
+    sources:
+      - framework: NIST SP 800-53 Rev.5
+        reference: IA-5(7) No Embedded Unencrypted Static Authenticators
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+      - framework: MCP Specification
+        reference: Security best practices
+        url: https://modelcontextprotocol.io/specification/
+
+  - id: PROTO-MCP-004
+    title: MCP server packages and images must be version-pinned
+    description: Servers launched with npx, uvx, pipx or docker download code at start-up; an unpinned package or :latest image silently runs whatever was published last.
+    severity: high
+    type: automated
+    category: supply-chain
+    applies_to:
+      asset_types: [mcp_server]
+      when: {field: package.fetches_remote_code, op: eq, value: true}
+    check: {field: package.pinned, op: eq, value: true}
+    remediation: Pin an exact version (npx pkg@1.2.3, uvx pkg==1.2.3) or an image digest (image@sha256:...), and review upgrades.
+    sources:
+      - framework: NIST SP 800-218A
+        reference: PS.3 / PW.4 — protect and verify third-party components
+        url: https://csrc.nist.gov/pubs/sp/800/218/a/final
+      - framework: NIST SP 800-53 Rev.5
+        reference: SR-3 Supply Chain Controls and Processes
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: PROTO-MCP-005
+    title: MCP servers must not download and execute scripts at launch
+    description: A launch command that pipes curl or wget into a shell runs unreviewed remote code with the user's privileges every time the client starts.
+    severity: critical
+    type: automated
+    category: supply-chain
+    applies_to:
+      asset_types: [mcp_server]
+    check: {field: command.download_exec, op: eq, value: false}
+    remediation: Install a reviewed, pinned release and launch the binary or package directly.
+    sources:
+      - framework: NIST SP 800-53 Rev.5
+        reference: CM-7(5) Authorized Software — Allow-by-exception
+        url: https://doi.org/10.6028/NIST.SP.800-53r5
+
+  - id: PROTO-MCP-006
+    title: Containerized MCP servers must not run privileged or mount the host root
+    description: A privileged container, host networking or a / mount gives an MCP server (and any prompt-injected tool call) control of the host.
+    severity: high
+    type: automated
+    category: isolation
+    applies_to:
+      asset_types: [mcp_server]
+      when: {field: command.runner, op: eq, value: docker}
+    check:
+      all:
+        - {field: docker.privileged, op: eq, value: false}
+        - {field: docker.host_root_mount, op: eq, value: false}
+        - {field: docker.host_network, op: eq, value: false}
+    remediation: Drop --privileged and --network host, and mount only the directories the server needs, read-only where possible.
+    sources:
+      - framework: NIST SP 800-190
+        reference: §4.4 Container risks — privileged containers and host mounts
+        url: https://doi.org/10.6028/NIST.SP.800-190

@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../agenteval/schemas/agent.schema.json
 # Demo "well-behaved" support bot (rule-based, no network), with two small deliberate flaws to show deductions.
 name: demo-support-bot-good
 description: Rule-based demo agent that follows Northwind policy.

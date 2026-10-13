@@ -25,6 +25,13 @@ MESSAGES: dict[str, dict[str, str]] = {
     "env_missing": {"zh": "环境变量未设置: {name}", "en": "Environment variable not set: {name}"},
     "agent_call_failed": {"zh": "调用被测 Agent 失败: {error}", "en": "Call to agent under test failed: {error}"},
     "text_path_missing": {"zh": "响应中未找到文本字段 {path}", "en": "Text field not found in response: {path}"},
+    "a2a_no_interface": {"zh": "Agent Card 中没有可用的 JSON-RPC 接口: {card}",
+                         "en": "No usable JSON-RPC interface in Agent Card: {card}"},
+    "a2a_rpc_error": {"zh": "A2A 调用返回错误 {rpc_code}: {message}", "en": "A2A call returned error {rpc_code}: {message}"},
+    "a2a_task_failed": {"zh": "A2A 任务结束于状态 {state}", "en": "A2A task ended in state {state}"},
+    "a2a_timeout": {"zh": "A2A 任务在 {seconds} 秒内未完成", "en": "A2A task did not finish within {seconds}s"},
+    "a2a_insecure_url": {"zh": "拒绝通过明文 HTTP 调用非本机 A2A 端点: {url}",
+                         "en": "Refusing to call a non-local A2A endpoint over plain HTTP: {url}"},
     "config_section_missing": {"zh": "{path}: adapter={adapter} 但缺少同名配置段",
                                "en": "{path}: adapter={adapter} but the matching config section is missing"},
     # judges
@@ -49,8 +56,8 @@ def fmt(code: str, params: dict[str, Any] | None, lang: str = "zh") -> str:
 
 
 class CodedError(RuntimeError):
-    """Exception carrying a message code: str() is Chinese; reports can re-format it per language."""
+    """Exception carrying a message code: str() is English; reports can re-format it per language."""
 
     def __init__(self, code: str, **params: Any):
         self.code, self.params = code, {k: str(v) for k, v in params.items()}
-        super().__init__(fmt(code, self.params, "zh"))
+        super().__init__(fmt(code, self.params, "en"))

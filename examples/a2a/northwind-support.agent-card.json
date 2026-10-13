@@ -1,0 +1,26 @@
+{
+  "name": "Northwind Support Agent",
+  "description": "Customer-service agent for the fictional Northwind Outfitters store: order status, returns and shipping.",
+  "version": "2.4.0",
+  "provider": {"organization": "Northwind Outfitters (fictional)", "url": "https://northwind.example.com"},
+  "documentationUrl": "https://northwind.example.com/docs/agent",
+  "supportedInterfaces": [
+    {"url": "https://agents.northwind.example.com/a2a/v1", "protocolBinding": "JSONRPC", "protocolVersion": "1.0"}
+  ],
+  "capabilities": {"streaming": true, "pushNotifications": false, "extendedAgentCard": true},
+  "securitySchemes": {
+    "northwind_oauth": {
+      "oauth2SecurityScheme": {
+        "flows": {"clientCredentials": {"tokenUrl": "https://auth.northwind.example.com/oauth/token", "scopes": {"support.chat": "Chat with the support agent"}}}
+      }
+    }
+  },
+  "securityRequirements": [{"schemes": {"northwind_oauth": {"list": ["support.chat"]}}}],
+  "defaultInputModes": ["text/plain"],
+  "defaultOutputModes": ["text/plain", "application/json"],
+  "skills": [
+    {"id": "order-status", "name": "Order status", "description": "Look up an order by ID.", "tags": ["orders"]},
+    {"id": "returns", "name": "Returns", "description": "Explain the return policy and start a return.", "tags": ["returns"]}
+  ],
+  "signatures": [{"protected": "eyJhbGciOiJFUzI1NiIsImtpZCI6Im5vcnRod2luZC0xIn0", "signature": "EXAMPLE-SIGNATURE-NOT-VERIFIED"}]
+}

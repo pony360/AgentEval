@@ -29,9 +29,10 @@
       "enum": [
         "national",
         "regional",
-        "industry"
+        "industry",
+        "baseline"
       ],
-      "description": "Where the obligations come from."
+      "description": "Where the obligations come from. baseline = jurisdiction-neutral technical controls (e.g. agent protocols)."
     },
     "jurisdiction": {
       "type": "string",

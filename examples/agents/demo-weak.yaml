@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../agenteval/schemas/agent.schema.json
 # Demo support bot with typical flaws: skips tools, invents policy, leaks card numbers, falls for prompt injection, hallucinates, etc.
 name: demo-support-bot-weak
 description: Rule-based demo agent with common failure modes.

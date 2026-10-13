@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../agenteval/schemas/agent.schema.json
 # Evaluate an in-house support API: adapts any JSON endpoint via a request template and response field paths.
 # Template placeholders: {{message}} {{session_id}} {{case_id}}; a value of exactly "{{history}}" inserts the message history list.
 # ${ENV_VAR} in headers is expanded from the environment.

@@ -2,9 +2,10 @@
 # Copyright 2026 The AgentEval Authors
 """Adapters for the agent under test.
 
-Three built-in kinds:
+Four built-in kinds:
   openai   OpenAI-compatible /chat/completions (supports tool calls; tool results are filled in from the paper's tool_mocks)
   webhook  generic HTTP endpoint; adapts in-house support APIs via request templates and field-path mapping
+  a2a      any Agent2Agent (A2A) agent over JSON-RPC, protocol v0.3 or v1.0, discovered from its Agent Card
   demo     local rule-based bot for demos and offline tests
 
 Secrets are injected only via environment variables (api_key_env / ${ENV_VAR} in headers) and never stored in plain text in config files.
@@ -61,6 +62,17 @@ class WebhookConfig(BaseModel):
     timeout_s: float = 60.0
 
 
+class A2AConfig(BaseModel):
+    agent_card_url: str | None = None      # card URL, or the agent's base URL (/.well-known/agent-card.json is appended)
+    url: str | None = None                 # explicit JSON-RPC endpoint; skips discovery
+    protocol_version: Literal["auto", "0.3", "1.0"] = "auto"
+    headers: dict[str, str] = Field(default_factory=dict)   # ${ENV_VAR} placeholders are expanded
+    timeout_s: float = 60.0
+    poll_interval_s: float = 1.0
+    send_context: bool = False             # prepend the paper's business context to the first message
+    tool_calls_key: str = "tool_calls"     # metadata / DataPart key the agent uses to report tool calls
+
+
 class DemoRule(BaseModel):
     match: str
     reply: str
@@ -76,9 +88,10 @@ class DemoConfig(BaseModel):
 class AgentConfig(BaseModel):
     name: str
     description: str = ""
-    adapter: Literal["openai", "webhook", "demo"]
+    adapter: Literal["openai", "webhook", "a2a", "demo"]
     openai: OpenAIConfig | None = None
     webhook: WebhookConfig | None = None
+    a2a: A2AConfig | None = None
     demo: DemoConfig | None = None
 
 
@@ -242,6 +255,166 @@ class WebhookSession:
         pass
 
 
+_TERMINAL = {"completed", "failed", "canceled", "rejected"}
+_PAUSED = {"input-required", "auth-required"}
+
+
+def _a2a_state(raw: Any) -> str:
+    """Normalize v0.3 ('input-required') and v1.0 ('TASK_STATE_INPUT_REQUIRED') task states."""
+    s = str(raw or "").lower()
+    if s.startswith("task_state_"):
+        s = s[len("task_state_"):]
+    return s.replace("_", "-")
+
+
+class A2ASession:
+    """One A2A conversation per exam case: contextId carries the turns; taskId continues paused tasks."""
+
+    def __init__(self, cfg: A2AConfig, paper: ExamPaper, case: Case, client: httpx.Client):
+        self.cfg, self.paper, self.client = cfg, paper, client
+        self.headers = {k: expand_env(v) for k, v in cfg.headers.items()}
+        self.endpoint, self.version = self._resolve()
+        if self.endpoint.startswith("http://") and not _is_local_url(self.endpoint):
+            raise AdapterError("a2a_insecure_url", url=self.endpoint)
+        if self.version == "1.0":
+            self.headers["A2A-Version"] = "1.0"
+        self.context_id: str | None = None
+        self.task_id: str | None = None
+        self.first = True
+
+    def _resolve(self) -> tuple[str, str]:
+        from agenteval.collectors.a2a import CardError, fetch_card, interfaces
+
+        want = self.cfg.protocol_version
+        if self.cfg.url:
+            return expand_env(self.cfg.url), ("0.3" if want == "auto" else want)
+        if not self.cfg.agent_card_url:
+            raise AdapterError("a2a_no_interface", card="(no url or agent_card_url configured)")
+        try:
+            card, where = fetch_card(expand_env(self.cfg.agent_card_url), client=self.client,
+                                     timeout=self.cfg.timeout_s, headers=self.headers)
+        except CardError as e:
+            raise AdapterError("agent_call_failed", error=e) from e
+        options = [i for i in interfaces(card) if i["binding"] in ("JSONRPC", "JSON-RPC", "JSONRPC2")]
+        if want != "auto":
+            options = [i for i in options if i["version"].startswith(want)]
+        if not options:
+            raise AdapterError("a2a_no_interface", card=where)
+        best = max(options, key=lambda i: (i["version"].startswith("1"), i["version"]))
+        return best["url"], ("1.0" if best["version"].startswith("1") else "0.3")
+
+    # ---- JSON-RPC ----
+    def _rpc(self, method_v03: str, method_v1: str, params: dict) -> Any:
+        body = {"jsonrpc": "2.0", "id": uuid.uuid4().hex,
+                "method": method_v1 if self.version == "1.0" else method_v03, "params": params}
+        try:
+            r = self.client.post(self.endpoint, json=body, headers=self.headers, timeout=self.cfg.timeout_s)
+            r.raise_for_status()
+            data = r.json()
+        except (httpx.HTTPError, ValueError) as e:
+            raise AdapterError("agent_call_failed", error=e) from e
+        if not isinstance(data, dict):
+            raise AdapterError("agent_call_failed", error="response is not a JSON-RPC object")
+        if data.get("error"):
+            err = data["error"] if isinstance(data["error"], dict) else {"message": data["error"]}
+            raise AdapterError("a2a_rpc_error", rpc_code=err.get("code", "?"), message=err.get("message", ""))
+        return data.get("result")
+
+    def _message(self, text: str) -> dict:
+        msg: dict[str, Any] = {"messageId": uuid.uuid4().hex}
+        if self.version == "1.0":
+            msg.update(role="ROLE_USER", parts=[{"text": text}])
+        else:
+            msg.update(kind="message", role="user", parts=[{"kind": "text", "text": text}])
+        if self.context_id:
+            msg["contextId"] = self.context_id
+        if self.task_id:
+            msg["taskId"] = self.task_id
+        return msg
+
+    # ---- response parsing ----
+    @staticmethod
+    def _unwrap(result: Any) -> tuple[str, dict]:
+        if not isinstance(result, dict):
+            raise AdapterError("agent_call_failed", error="empty A2A result")
+        for key in ("task", "message"):                       # v1.0 oneof wrapper
+            if isinstance(result.get(key), dict) and len(result) == 1:
+                return key, result[key]
+        kind = result.get("kind")
+        if kind in ("task", "message"):
+            return kind, result
+        return ("task", result) if "status" in result or "artifacts" in result else ("message", result)
+
+    def _parts(self, parts: Any, texts: list[str], calls: list[ToolCall]) -> None:
+        for part in parts or []:
+            if not isinstance(part, dict):
+                continue
+            if part.get("kind", "text") == "text" and isinstance(part.get("text"), str):
+                texts.append(part["text"])
+            data = part.get("data")
+            if isinstance(data, dict) and self.cfg.tool_calls_key in data:
+                calls.extend(_parse_tool_calls(data[self.cfg.tool_calls_key]))
+
+    def _meta(self, obj: dict, calls: list[ToolCall]) -> None:
+        meta = obj.get("metadata")
+        if isinstance(meta, dict) and self.cfg.tool_calls_key in meta:
+            calls.extend(_parse_tool_calls(meta[self.cfg.tool_calls_key]))
+
+    def _read_task(self, task: dict, texts: list[str], calls: list[ToolCall]) -> str:
+        self._meta(task, calls)
+        for art in task.get("artifacts") or []:
+            if isinstance(art, dict):
+                self._meta(art, calls)
+                self._parts(art.get("parts"), texts, calls)
+        status = task.get("status") or {}
+        msg = status.get("message") if isinstance(status, dict) else None
+        if isinstance(msg, dict) and not texts:
+            self._meta(msg, calls)
+            self._parts(msg.get("parts"), texts, calls)
+        return _a2a_state(status.get("state") if isinstance(status, dict) else None)
+
+    def send(self, user_text: str) -> AgentReply:
+        if self.first and self.cfg.send_context and self.paper.context:
+            user_text = f"{self.paper.context}\n\n{user_text}"
+        self.first = False
+        params: dict[str, Any] = {"message": self._message(user_text)}
+        if self.version != "1.0":
+            params["configuration"] = {"blocking": True}
+        t0 = time.perf_counter()
+        kind, obj = self._unwrap(self._rpc("message/send", "SendMessage", params))
+        texts: list[str] = []
+        calls: list[ToolCall] = []
+        self.context_id = obj.get("contextId") or self.context_id
+        if kind == "message":
+            self._meta(obj, calls)
+            self._parts(obj.get("parts"), texts, calls)
+            self.task_id = None
+        else:
+            state = self._read_task(obj, texts, calls)
+            deadline = t0 + self.cfg.timeout_s
+            while state not in _TERMINAL | _PAUSED:
+                if time.perf_counter() > deadline:
+                    raise AdapterError("a2a_timeout", seconds=self.cfg.timeout_s)
+                time.sleep(self.cfg.poll_interval_s)
+                texts, calls = [], []
+                _, obj = self._unwrap(self._rpc("tasks/get", "GetTask", {"id": obj.get("id")}))
+                state = self._read_task(obj, texts, calls)
+            if state in ("failed", "rejected", "canceled") and not texts:
+                raise AdapterError("a2a_task_failed", state=state)
+            self.task_id = obj.get("id") if state in _PAUSED else None
+        return AgentReply(text="\n".join(t for t in texts if t), tool_calls=calls,
+                          latency_ms=(time.perf_counter() - t0) * 1000)
+
+    def close(self) -> None:
+        pass
+
+
+def _is_local_url(url: str) -> bool:
+    from urllib.parse import urlparse
+
+    return (urlparse(url).hostname or "") in ("localhost", "127.0.0.1", "::1")
+
+
 class DemoSession:
     def __init__(self, cfg: DemoConfig):
         self.cfg = cfg
@@ -273,4 +446,6 @@ class Agent:
             return OpenAISession(self.cfg.openai, paper, case, self.client)
         if self.cfg.adapter == "webhook":
             return WebhookSession(self.cfg.webhook, case, self.client)
+        if self.cfg.adapter == "a2a":
+            return A2ASession(self.cfg.a2a, paper, case, self.client)
         return DemoSession(self.cfg.demo)

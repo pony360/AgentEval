@@ -2,13 +2,13 @@
 
 **Scan, evaluate, certify.** AgentEval is an Apache-2.0 command-line toolkit with three jobs:
 
-- it **scans** self-hosted AI infrastructure against policy-as-code rule packs,
+- it **scans** self-hosted AI infrastructure, A2A Agent Cards and MCP configurations against policy-as-code rule packs,
 - it **evaluates** AI agents with standard exam papers, and
 - it **issues signed certificates** when a system passes both.
 
 [English](https://github.com/pony360/AgentEval/blob/main/README.md) · [简体中文](https://github.com/pony360/AgentEval/blob/main/README.zh-CN.md)
 
-> **Status: alpha (0.1.0).** The rule packs are starter mappings, and every one is marked `verified: false`.
+> **Status: alpha (0.2.0).** The rule packs are starter mappings, and every one is marked `verified: false`.
 > They are a starting point for your own legal and compliance review. They are not legal advice.
 
 ---
@@ -23,6 +23,7 @@
 - [Rule packs](#rule-packs)
 - [Writing rules](#writing-rules)
 - [Evaluating agents](#evaluating-agents)
+- [Agent protocols: A2A and MCP](#agent-protocols-a2a-and-mcp)
 - [Certification](#certification)
 - [Configuration](#configuration)
 - [Security model](#security-model)
@@ -50,7 +51,9 @@ combined result into a certificate that anyone can verify offline.
 | **Tiered rule packs** | National (US federal guidance), regional (California) and industry (PCI DSS) starter packs |
 | **Reports** | JSON, SARIF (GitHub code scanning) and HTML, in English or Simplified Chinese |
 | **Agent evaluation** | Scripted multi-turn exams with tool mocks, deterministic assertions plus rubric judging, and critical-failure vetoes |
-| **Pluggable adapters and judges** | OpenAI-compatible endpoints, generic webhooks and demo agents. Heuristic (offline), Anthropic or OpenAI-compatible judges |
+| **Pluggable adapters and judges** | OpenAI-compatible endpoints, A2A agents (v0.3 and v1.0), generic webhooks and demo agents. Heuristic (offline), Anthropic or OpenAI-compatible judges |
+| **Agent protocols** | Checks A2A Agent Cards (TLS, auth, OAuth flows, signing) and MCP client configs (plaintext secrets, unpinned packages, download-and-execute, privileged containers) |
+| **MCP server** | `agenteval mcp serve` exposes scanning, evaluation and certificate checks as MCP tools, confined to a root directory and offline by default |
 | **Certification** | Strict gates, Ed25519-signed JSON, HTML/PDF certificates, optional QR verification URL and revocation status check |
 | **CI-friendly** | Stable exit codes. No database or server required |
 
@@ -127,6 +130,8 @@ Every command accepts `--lang zh` for Chinese output.
 | `agenteval schemas -o DIR` | Export the JSON Schemas for editors |
 | `agenteval eval papers \| validate \| run` | List or validate exam papers. Run an exam against an agent |
 | `agenteval cert check \| issue \| verify \| keygen` | Certification |
+| `agenteval a2a card TARGET` | Fetch and check an A2A Agent Card |
+| `agenteval mcp serve` | Run AgentEval as an MCP server over stdio |
 
 | Exit code | Meaning |
 |---|---|
@@ -140,6 +145,7 @@ Every command accepts `--lang zh` for Chinese output.
 |---|---|---|---|
 | `us-federal` | national | 16 | NIST AI RMF 1.0, AI 600-1, SP 800-53, SP 800-190, SP 800-218A and OMB M-25-21: authentication, TLS, network policy, image pinning, secrets, provenance, governance attestations |
 | `us-ca` | regional | 3 | Bot disclosure (B&P §17940), CCPA data minimization, AB 2013 training-data transparency |
+| `agent-protocols` | baseline | 12 | A2A Agent Cards and MCP client configs: TLS, authentication, OAuth flows, card signing, plaintext secrets, version pinning, download-and-execute, container isolation |
 | `pci-dss` | industry | 4 | PCI DSS v4.0.1 (Req. 3, 4, 8, 10): no full card numbers in logs, strong cryptography in transit, authentication, and audit logging for AI that handles payment conversations |
 
 Rule text is in English, and Simplified Chinese translations are in `rules/*/i18n/zh.yaml`.
@@ -182,6 +188,22 @@ agenteval eval run -p cs-ecommerce-v1 -a my-agent.yaml --judge anthropic --judge
 ```
 
 See **[docs/exams.md](https://github.com/pony360/AgentEval/blob/main/docs/exams.md)** for the paper format, scoring, adapters and judges.
+
+## Agent protocols: A2A and MCP
+
+```bash
+# Evaluate an A2A agent (v1.0 or v0.3): each exam case runs as one A2A conversation
+agenteval eval run -p cs-ecommerce-v1 -a examples/agents/a2a.example.yaml
+
+# Check an Agent Card, and the MCP servers your tools launch
+agenteval a2a card https://agents.example.com
+agenteval scan --a2a-card ./agent-card.json --mcp-config ~/.cursor/mcp.json -f html -o protocols.html
+
+# Use AgentEval from Claude, an IDE or any MCP client
+agenteval mcp serve --root .
+```
+
+See **[docs/a2a.md](https://github.com/pony360/AgentEval/blob/main/docs/a2a.md)** and **[docs/mcp.md](https://github.com/pony360/AgentEval/blob/main/docs/mcp.md)**.
 
 ## Certification
 
@@ -226,17 +248,19 @@ To report a vulnerability, see [SECURITY.md](https://github.com/pony360/AgentEva
 
 ```
 agenteval/            Python package (CLI, engine, collectors, evaluation, certification, schemas)
-rules/                Rule packs (national / regional / industry)
+rules/                Rule packs (national / regional / industry / baseline)
 exams/                Exam papers
 certification/        Certification policy and registered systems
-examples/             Sample snapshot, attestations and agent configs
+examples/             Sample snapshot, attestations, agent configs, A2A cards and MCP configs
 docs/                 Reference documentation
 tests/                Test suite (pytest)
 ```
 
 ## Roadmap
 
-- More collectors (cloud-managed endpoints, model registries, API gateways)
+- More collectors (cloud-managed endpoints, model registries, API gateways, live MCP server introspection)
+- A2A streaming (`SendStreamingMessage`) and gRPC / HTTP+JSON bindings; Agent Card signature verification
+- An MCP mock-tool server so agents that consume MCP can be scored on their tool calls
 - More rule packs (EU AI Act, ISO/IEC 42001, HIPAA), contributed with reviewer sign-off
 - More exam papers (IT helpdesk, sales assistant, RAG question answering)
 - A hosted verification and status service reference implementation

@@ -1,0 +1,15 @@
+# yaml-language-server: $schema=../../agenteval/schemas/agent.schema.json
+# Evaluate any Agent2Agent (A2A) agent. The Agent Card is fetched, a JSON-RPC interface is chosen
+# (v1.0 preferred, v0.3 supported) and each exam case runs as one A2A conversation (contextId).
+name: northwind-support-a2a
+description: Northwind support agent exposed over A2A.
+adapter: a2a
+a2a:
+  agent_card_url: https://agents.northwind.example.com      # /.well-known/agent-card.json is appended
+  # url: https://agents.northwind.example.com/a2a/v1        # or skip discovery and call this endpoint
+  protocol_version: auto                                    # auto | "0.3" | "1.0"
+  headers:
+    Authorization: "Bearer ${NORTHWIND_A2A_TOKEN}"          # expanded from the environment
+  timeout_s: 60
+  send_context: false
+  tool_calls_key: tool_calls   # if the agent reports tool calls in message metadata or a DataPart

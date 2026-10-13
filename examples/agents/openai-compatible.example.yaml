@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=../../agenteval/schemas/agent.schema.json
 # Evaluate any OpenAI-compatible endpoint (vLLM / TGI / enterprise gateway / cloud service).
 # If the agent returns tool_calls, the evaluator fills in results from the paper's tool_mocks and continues.
 name: llama-chat-prod
